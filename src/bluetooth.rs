@@ -5,15 +5,6 @@ use futures::Stream;
 use log::info;
 use std::pin::Pin;
 
-pub async fn get_periph_name(periph: &Peripheral) -> String {
-    let properties = periph.properties().await.unwrap().unwrap();
-    if let Some(name) = properties.local_name {
-        name
-    } else {
-        String::from("Unknown")
-    }
-}
-
 #[derive(Clone)]
 pub struct BluetoothController {
     adapter: Adapter,

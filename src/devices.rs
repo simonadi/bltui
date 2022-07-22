@@ -17,8 +17,6 @@ use tui::{
     widgets::{ListItem, ListState},
 };
 
-use crate::bluetooth::get_periph_name;
-
 #[derive(Debug, Clone)]
 pub struct Device {
     pub periph_id: PeripheralId,
@@ -33,7 +31,11 @@ impl Device {
     pub async fn from_periph(periph: &Peripheral) -> Device {
         let properties = periph.properties().await.unwrap().unwrap();
         let address = periph.address().to_string();
-        let name = get_periph_name(periph).await;
+        let name = if let Some(name) = properties.local_name {
+            name
+        } else {
+            String::from("Unknown")
+        };
         let rssi = properties.rssi;
         let connected = periph.is_connected().await.unwrap();
         let periph_id = periph.id();
