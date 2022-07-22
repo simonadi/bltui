@@ -31,6 +31,12 @@ impl AppState {
     }
 }
 
+impl Default for AppState {
+    fn default() -> AppState {
+        Self::new()
+    }
+}
+
 impl App {
     pub async fn new() -> App {
         info!("Initializing the app");

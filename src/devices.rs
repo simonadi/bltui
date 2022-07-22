@@ -48,10 +48,8 @@ impl Device {
             tx_power,
         }
     }
-}
 
-impl Into<Text<'_>> for Device {
-    fn into(self) -> Text<'static> {
+    fn into_text(self) -> Text<'static> {
         Text::from(vec![Spans::from(vec![
             Span::from(if self.name == "Unknown" {
                 format!("{} ({})", self.name, self.address)
@@ -63,6 +61,12 @@ impl Into<Text<'_>> for Device {
                 Style::default().fg(Color::Green),
             ),
         ])])
+    }
+}
+
+impl From<Device> for Text<'_> {
+    fn from(device: Device) -> Text<'static> {
+        device.into_text()
     }
 }
 
@@ -92,21 +96,6 @@ impl Devices {
             list_state: ListState::default(),
             hash_index_map: HashMap::<u64, usize>::new(),
             devices: Vec::new(),
-        }
-    }
-
-    pub fn insert(&mut self, device: Device) -> Result<(), ()> {
-        let mut hasher = DefaultHasher::default();
-        device.hash(&mut hasher);
-        let hash = hasher.finish();
-
-        if self.hash_index_map.contains_key(&hash) {
-            Err(())
-        } else {
-            let index = self.devices.len();
-            self.devices.push(device);
-            self.hash_index_map.insert(hash, index);
-            Ok(())
         }
     }
 
@@ -158,5 +147,11 @@ impl Devices {
         self.list_state
             .selected()
             .map(|index| self.devices[index].clone())
+    }
+}
+
+impl Default for Devices {
+    fn default() -> Devices {
+        Self::new()
     }
 }
