@@ -2,7 +2,7 @@ use btleplug::api::CentralEvent;
 use crossterm::event::{Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use futures::stream::StreamExt;
-use log::{debug, error, info, trace, warn};
+use log::{debug, info, trace};
 
 use crate::bluetooth::BluetoothController;
 use crate::devices::{Device, Devices};
