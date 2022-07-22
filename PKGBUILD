@@ -26,5 +26,4 @@ package() {
     install -Dm0755 -t  "$pkgdir/usr/bin/" "target/release/$pkgname"
 }
 
-sha256sums=('63df8d5cfdea80ec77b77c45e8560e686aaf424c76bd80235d44110bea13069c')
-sha256sums=('a33c8501d956e2edb2d4480ce07f07ec2e3462f5e48a114c95e4975b07ad67e1')
+sha256sums=('4427e1e06e64c2a9150e724ad460af837d9825df21142a303b80548e82bfdac9')
