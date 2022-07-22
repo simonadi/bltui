@@ -20,6 +20,7 @@ clean:
     cargo clean
     rm -rf logs
     rm -rf pkg
-    rm -f *.tar.gz
+    rm -f **/*.tar.gz
     rm -f *.pkg.tar.zst
+    rm -rf src/chesapeake-*
     rm -rf chesapeake-*

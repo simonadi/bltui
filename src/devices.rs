@@ -12,7 +12,8 @@ use btleplug::{
     platform::{Peripheral, PeripheralId},
 };
 use tui::{
-    text::Text,
+    style::{Color, Style},
+    text::{Span, Spans, Text},
     widgets::{ListItem, ListState},
 };
 
@@ -32,7 +33,7 @@ impl Device {
     pub async fn from_periph(periph: &Peripheral) -> Device {
         let properties = periph.properties().await.unwrap().unwrap();
         let address = periph.address().to_string();
-        let name = get_periph_name(&periph).await;
+        let name = get_periph_name(periph).await;
         let rssi = properties.rssi;
         let connected = periph.is_connected().await.unwrap();
         let periph_id = periph.id();
@@ -51,11 +52,17 @@ impl Device {
 
 impl Into<Text<'_>> for Device {
     fn into(self) -> Text<'static> {
-        Text::from(if self.name == "Unknown" {
-            format!("{} ({})", self.name, self.address)
-        } else {
-            self.name
-        })
+        Text::from(vec![Spans::from(vec![
+            Span::from(if self.name == "Unknown" {
+                format!("{} ({})", self.name, self.address)
+            } else {
+                self.name
+            }),
+            Span::styled(
+                if self.connected { " (Connected)" } else { "" },
+                Style::default().fg(Color::Green),
+            ),
+        ])])
     }
 }
 
@@ -123,10 +130,8 @@ impl Devices {
         if let Some(index) = current_index {
             self.list_state
                 .select(Some(min(index + 1, self.devices.len() - 1)));
-        } else {
-            if !self.devices.is_empty() {
-                self.list_state.select(Some(0));
-            }
+        } else if !self.devices.is_empty() {
+            self.list_state.select(Some(0));
         }
     }
 
@@ -135,10 +140,8 @@ impl Devices {
 
         if let Some(index) = current_index {
             self.list_state.select(Some(index.saturating_sub(1)));
-        } else {
-            if !self.devices.is_empty() {
-                self.list_state.select(Some(0));
-            }
+        } else if !self.devices.is_empty() {
+            self.list_state.select(Some(0));
         }
     }
 

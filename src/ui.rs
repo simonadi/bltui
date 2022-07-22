@@ -79,10 +79,14 @@ pub async fn draw_ui<B: Backend>(
                         "Tx power : {} dBm",
                         device.tx_power.unwrap_or(0)
                     ))),
-                    Spans::from(Span::raw(format!(
-                        "Connected : {}",
-                        if device.connected { "yes" } else { "no" }
-                    ))),
+                    Spans::from(vec![
+                        Span::raw("Connected : "),
+                        if device.connected {
+                            Span::styled("yes", Style::default().fg(Color::Green))
+                        } else {
+                            Span::styled("no", Style::default().fg(Color::Red))
+                        },
+                    ]),
                 ])
             } else {
                 Text::from(vec![Spans::from(vec![Span::raw("")])])
@@ -135,6 +139,32 @@ pub async fn draw_ui<B: Backend>(
             rect.render_widget(blue_box(None), right_chunks[1]);
             rect.render_widget(device_details, right_chunks[0]);
             // rect.render_widget(known_devices)
+
+            if false {
+                let block = Block::default()
+                    .title("Popup")
+                    .borders(Borders::ALL)
+                    .style(Style::default().bg(Color::Blue));
+                let vertical_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Percentage(45),
+                        Constraint::Length(4),
+                        Constraint::Percentage(45),
+                    ])
+                    .split(size);
+
+                let popup_chunk = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .constraints([
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(60),
+                        Constraint::Percentage(20),
+                    ])
+                    .split(vertical_chunks[1])[1];
+
+                rect.render_widget(block, popup_chunk);
+            }
         })
         .unwrap();
 }

@@ -1,4 +1,4 @@
-use btleplug::api::{Central, CentralEvent, ScanFilter};
+use btleplug::api::CentralEvent;
 use crossterm::event::{Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use futures::stream::StreamExt;
@@ -88,15 +88,15 @@ impl App {
         let mut terminal = initialize_terminal();
         let tick_rate = std::time::Duration::from_millis(7);
 
-        let mut app_state_ui = std::sync::Arc::clone(&self.state);
+        let app_state_ui = std::sync::Arc::clone(&self.state);
         let mut frame_times = Vec::new();
 
         loop {
             let starting_time = std::time::Instant::now();
 
             if crossterm::event::poll(tick_rate).unwrap() {
-                match crossterm::event::read().unwrap() {
-                    Event::Key(key) => match key.code {
+                if let Event::Key(key) = crossterm::event::read().unwrap() {
+                    match key.code {
                         KeyCode::Char('q') => {
                             // Quit
                             break;
@@ -148,17 +148,11 @@ impl App {
                         }
                         KeyCode::Enter => {}
                         _ => {}
-                    },
-                    _ => {}
+                    }
                 }
             }
 
-            draw_ui(
-                &mut terminal,
-                &mut app_state_ui,
-                self.bt_controller.scanning,
-            )
-            .await;
+            draw_ui(&mut terminal, &app_state_ui, self.bt_controller.scanning).await;
             frame_times.push(starting_time.elapsed());
 
             if frame_times.len() % 100 == 1 {
