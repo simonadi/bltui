@@ -1,4 +1,4 @@
-use crate::app::AppState;
+use crate::{app::AppState, devices::Device};
 use crossterm::terminal::enable_raw_mode;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -8,7 +8,21 @@ use tui::{
     widgets::{Block, Borders, List, Paragraph},
     Terminal,
 };
-
+impl From<Device> for Text<'_> {
+    fn from(device: Device) -> Text<'static> {
+        Text::from(vec![Spans::from(vec![
+            Span::from(if device.name == "Unknown" {
+                format!("{} ({})", device.name, device.address)
+            } else {
+                device.name
+            }),
+            Span::styled(
+                if device.connected { " (Connected)" } else { "" },
+                Style::default().fg(Color::Green),
+            ),
+        ])])
+    }
+}
 pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
     let stdout = std::io::stdout();
     enable_raw_mode().unwrap();

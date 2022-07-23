@@ -7,15 +7,8 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use btleplug::{
-    api::Peripheral as _,
-    platform::{Peripheral, PeripheralId},
-};
-use tui::{
-    style::{Color, Style},
-    text::{Span, Spans, Text},
-    widgets::{ListItem, ListState},
-};
+use btleplug::platform::PeripheralId;
+use tui::widgets::{ListItem, ListState};
 
 #[derive(Debug, Clone)]
 pub struct Device {
@@ -25,51 +18,6 @@ pub struct Device {
     pub connected: bool,
     pub rssi: Option<i16>,
     pub tx_power: Option<i16>,
-}
-
-impl Device {
-    pub async fn from_periph(periph: &Peripheral) -> Device {
-        let properties = periph.properties().await.unwrap().unwrap();
-        let address = periph.address().to_string();
-        let name = if let Some(name) = properties.local_name {
-            name
-        } else {
-            String::from("Unknown")
-        };
-        let rssi = properties.rssi;
-        let connected = periph.is_connected().await.unwrap();
-        let periph_id = periph.id();
-        let tx_power = properties.tx_power_level;
-
-        Device {
-            periph_id,
-            address,
-            name,
-            connected,
-            rssi,
-            tx_power,
-        }
-    }
-
-    fn into_text(self) -> Text<'static> {
-        Text::from(vec![Spans::from(vec![
-            Span::from(if self.name == "Unknown" {
-                format!("{} ({})", self.name, self.address)
-            } else {
-                self.name
-            }),
-            Span::styled(
-                if self.connected { " (Connected)" } else { "" },
-                Style::default().fg(Color::Green),
-            ),
-        ])])
-    }
-}
-
-impl From<Device> for Text<'_> {
-    fn from(device: Device) -> Text<'static> {
-        device.into_text()
-    }
 }
 
 impl PartialEq for Device {

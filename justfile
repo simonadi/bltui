@@ -24,3 +24,11 @@ clean:
     rm -f *.pkg.tar.zst
     rm -rf src/chesapeake-*
     rm -rf chesapeake-*
+
+check:
+    #!/bin/sh
+    cargo check
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+    cargo clippy
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+    cargo fmt

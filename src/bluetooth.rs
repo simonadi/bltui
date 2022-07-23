@@ -5,6 +5,8 @@ use futures::Stream;
 use log::info;
 use std::pin::Pin;
 
+use crate::devices::Device;
+
 #[derive(Clone)]
 pub struct BluetoothController {
     adapter: Adapter,
@@ -70,5 +72,23 @@ impl BluetoothController {
 
     pub async fn get_peripheral(&self, periph_id: &PeripheralId) -> Peripheral {
         self.adapter.peripheral(periph_id).await.unwrap()
+    }
+
+    pub async fn get_device(&self, periph_id: &PeripheralId) -> Device {
+        let periph = self.adapter.peripheral(periph_id).await.unwrap();
+        let properties = periph.properties().await.unwrap().unwrap();
+
+        Device {
+            periph_id: periph.id(),
+            address: periph.address().to_string(),
+            name: if let Some(name) = properties.local_name {
+                name
+            } else {
+                String::from("Unknown")
+            },
+            connected: periph.is_connected().await.unwrap(),
+            rssi: properties.rssi,
+            tx_power: properties.tx_power_level,
+        }
     }
 }

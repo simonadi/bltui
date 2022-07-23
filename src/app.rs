@@ -5,7 +5,7 @@ use futures::stream::StreamExt;
 use log::{debug, info, trace};
 
 use crate::bluetooth::BluetoothController;
-use crate::devices::{Device, Devices};
+use crate::devices::Devices;
 use crate::ui::{draw_ui, initialize_terminal};
 
 pub struct App {
@@ -59,29 +59,25 @@ impl App {
                 trace!("Received a new event : {:?}", event);
                 match event {
                     CentralEvent::DeviceDiscovered(id) => {
-                        let device =
-                            Device::from_periph(&ev_bt_controller.get_peripheral(&id).await).await;
+                        let device = ev_bt_controller.get_device(&id).await;
                         debug!("New device : {} ({})", device.name, device.address);
 
                         let mut state = app_state_bt.lock().await;
                         state.devices.insert_or_replace(device);
                     }
                     CentralEvent::DeviceUpdated(id) => {
-                        let device =
-                            Device::from_periph(&ev_bt_controller.get_peripheral(&id).await).await;
+                        let device = ev_bt_controller.get_device(&id).await;
                         let mut state = app_state_bt.lock().await;
                         state.devices.insert_or_replace(device);
                     }
                     CentralEvent::DeviceConnected(id) => {
-                        let device =
-                            Device::from_periph(&ev_bt_controller.get_peripheral(&id).await).await;
+                        let device = ev_bt_controller.get_device(&id).await;
                         info!("Connected to {} ({})", device.name, device.address);
                         let mut state = app_state_bt.lock().await;
                         state.devices.insert_or_replace(device);
                     }
                     CentralEvent::DeviceDisconnected(id) => {
-                        let device =
-                            Device::from_periph(&ev_bt_controller.get_peripheral(&id).await).await;
+                        let device = ev_bt_controller.get_device(&id).await;
                         info!("Disconnected from {} ({})", device.name, device.address);
                         let mut state = app_state_bt.lock().await;
                         state.devices.insert_or_replace(device);
