@@ -93,6 +93,8 @@ impl App {
         let app_state_ui = std::sync::Arc::clone(&self.state);
         let mut frame_times = Vec::new();
 
+        tui_logger::init_logger(log::LevelFilter::Info).unwrap();
+
         loop {
             let starting_time = std::time::Instant::now();
 

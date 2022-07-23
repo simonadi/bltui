@@ -8,6 +8,7 @@ use tui::{
     widgets::{Block, Borders, List, Paragraph},
     Terminal,
 };
+
 impl From<Device> for Text<'_> {
     fn from(device: Device) -> Text<'static> {
         Text::from(vec![Spans::from(vec![
@@ -23,6 +24,7 @@ impl From<Device> for Text<'_> {
         ])])
     }
 }
+
 pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
     let stdout = std::io::stdout();
     enable_raw_mode().unwrap();
@@ -101,6 +103,14 @@ pub async fn draw_ui<B: Backend>(
                             Span::styled("no", Style::default().fg(Color::Red))
                         },
                     ]),
+                    Spans::from(vec![
+                        Span::raw("Paired : "),
+                        if device.paired {
+                            Span::styled("yes", Style::default().fg(Color::Green))
+                        } else {
+                            Span::styled("no", Style::default().fg(Color::Red))
+                        },
+                    ]),
                 ])
             } else {
                 Text::from(vec![Spans::from(vec![Span::raw("")])])
@@ -146,11 +156,24 @@ pub async fn draw_ui<B: Backend>(
 
             let commands = Paragraph::new(commands_str).block(blue_box(None));
 
+
+            let logger = tui_logger::TuiLoggerWidget::default()
+                .block(blue_box(None))
+                .style_error(Style::default().fg(Color::Red))
+                .style_warn(Style::default().fg(Color::Yellow))
+                .style_info(Style::default().fg(Color::White))
+                .output_level(Some(tui_logger::TuiLoggerLevelOutput::Long))
+                .output_file(false)
+                .output_target(false)
+                .output_line(false)
+                .output_timestamp(Some("%F %H:%M:%S%.3f".to_string()));
+
+
             // rect.render_widget(title, chunks[0]);
             rect.render_widget(title, chunks[0]);
             rect.render_widget(commands, chunks[2]);
             rect.render_stateful_widget(list, main_chunks[0], &mut state.devices().list_state);
-            rect.render_widget(blue_box(None), right_chunks[1]);
+            rect.render_widget(logger, right_chunks[1]);
             rect.render_widget(device_details, right_chunks[0]);
             // rect.render_widget(known_devices)
 

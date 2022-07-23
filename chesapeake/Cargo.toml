@@ -1,0 +1,17 @@
+[package]
+name = "chesapeake"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+btleplug = { path = "../btleplug", features = ["serde"] }
+tokio = { version = "1.20.0", features = ["full"] }
+futures = "0.3"
+tui = "0.18"
+crossterm = "0.23"
+log = "0.4"
+simple-logging = "2.0.2"
+chrono = "0.4.19"
+tui-logger="0.8"

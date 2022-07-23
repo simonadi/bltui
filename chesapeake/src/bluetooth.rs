@@ -87,6 +87,7 @@ impl BluetoothController {
                 String::from("Unknown")
             },
             connected: periph.is_connected().await.unwrap(),
+            paired: periph.is_paired().await.unwrap(),
             rssi: properties.rssi,
             tx_power: properties.tx_power_level,
         }
