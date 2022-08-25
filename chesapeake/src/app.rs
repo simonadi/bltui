@@ -2,8 +2,9 @@ use btleplug::api::CentralEvent;
 use crossterm::event::{Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use futures::stream::StreamExt;
-use log::{debug, info, trace};
+use log::{debug, info, trace, warn};
 
+use crate::agent::Agent;
 use crate::bluetooth::BluetoothController;
 use crate::devices::Devices;
 use crate::ui::{draw_ui, initialize_terminal};
@@ -37,6 +38,10 @@ impl Default for AppState {
     }
 }
 
+struct Hello {
+    called_count: u32,
+}
+
 impl App {
     pub async fn new() -> App {
         info!("Initializing the app");
@@ -51,6 +56,13 @@ impl App {
     }
 
     pub async fn start(&mut self) {
+        tui_logger::init_logger(log::LevelFilter::Info).unwrap();
+
+        // let agent = Agent::new("/chesapeake/agent", "KeyboardDisplay");
+        // agent.start().await;
+        // agent.register_agent().await;
+        // agent.request_default_agent().await;
+
         let mut bt_events = self.bt_controller.events().await;
         let app_state_bt = std::sync::Arc::clone(&self.state);
         let ev_bt_controller = self.bt_controller.clone();
@@ -82,6 +94,9 @@ impl App {
                         let mut state = app_state_bt.lock().await;
                         state.devices.insert_or_replace(device);
                     }
+                    CentralEvent::CustomEvent(message) => {
+                        warn!("Received a custom event : {}", message);
+                    }
                     _ => {}
                 }
             }
@@ -92,8 +107,6 @@ impl App {
 
         let app_state_ui = std::sync::Arc::clone(&self.state);
         let mut frame_times = Vec::new();
-
-        tui_logger::init_logger(log::LevelFilter::Info).unwrap();
 
         loop {
             let starting_time = std::time::Instant::now();
@@ -130,7 +143,36 @@ impl App {
                             };
                             if let Some(device) = device_opt {
                                 info!("Trying to connect to {} ({})", device.name, device.address);
-                                self.bt_controller.connect(&device.periph_id).await.unwrap();
+                                let bt_controller_temp = self.bt_controller.clone();
+                                tokio::spawn(async move {
+                                    bt_controller_temp.connect(&device.periph_id).await.unwrap();
+                                });
+                            }
+                        }
+                        KeyCode::Char('p') => {
+                            let device_opt = {
+                                let state = app_state_ui.lock().await;
+                                state.devices.get_selected_device().await
+                            };
+
+                            if let Some(device) = device_opt {
+                                info!("Trying to pair to {} ({})", device.name, device.address);
+                                self.bt_controller.pair(&&device.periph_id).await.unwrap();
+                            }
+                        }
+                        KeyCode::Char('t') => {
+                            let device_opt = {
+                                let state = app_state_ui.lock().await;
+                                state.devices.get_selected_device().await
+                            };
+
+                            if let Some(device) = device_opt {
+                                info!("Triggering trust for device {} ({})", device.name, device.address);
+                                self.bt_controller.trigger_trust(&&device.periph_id).await.unwrap();
+                                let updated_device = self.bt_controller.get_device(&device.periph_id).await;
+                                let mut state = app_state_ui.lock().await;
+                                state.devices.insert_or_replace(updated_device);
+                                // TODO : device state doesn't get refreshed after trusting it since currently the refresh happens when receiving an event from the bluetooth process
                             }
                         }
                         KeyCode::Char('h') => {

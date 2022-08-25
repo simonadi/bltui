@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 btleplug = { path = "../btleplug", features = ["serde"] }
+bluez-async = { path = "../bluez-async" }
 tokio = { version = "1.20.0", features = ["full"] }
 futures = "0.3"
 tui = "0.18"
@@ -15,3 +16,6 @@ log = "0.4"
 simple-logging = "2.0.2"
 chrono = "0.4.19"
 tui-logger="0.8"
+dbus = { version = "0.9", features = ["futures"] }
+dbus-crossroads = "0.5.1"
+dbus-tokio = "0.7.5"

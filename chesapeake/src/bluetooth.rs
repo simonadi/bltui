@@ -37,33 +37,38 @@ impl BluetoothController {
     }
 
     pub async fn connect(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
-        let periph = self.adapter.peripheral(periph_id).await;
+        let periph = self.adapter.peripheral(periph_id).await?;
 
-        match periph {
-            Ok(per) => {
-                if per.is_connected().await.unwrap() {
-                    Ok(())
-                } else {
-                    per.connect().await
-                }
-            }
-            Err(err) => Err(err),
+        if periph.is_connected().await.unwrap() {
+            Ok(())
+        } else {
+            periph.connect().await
         }
     }
 
     pub async fn disconnect(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
-        let periph = self.adapter.peripheral(periph_id).await;
+        let periph = self.adapter.peripheral(periph_id).await?;
 
-        match periph {
-            Ok(per) => {
-                if !per.is_connected().await.unwrap() {
-                    Ok(())
-                } else {
-                    per.disconnect().await
-                }
-            }
-            Err(err) => Err(err),
+        if !periph.is_connected().await.unwrap() {
+            Ok(())
+        } else {
+            periph.disconnect().await
         }
+    }
+
+    pub async fn pair(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
+        let periph = self.adapter.peripheral(periph_id).await?;
+
+        if !periph.is_paired().await.unwrap() {
+            periph.pair().await
+        } else {
+            Ok(())
+        }
+    }
+
+    pub async fn trigger_trust(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
+        let periph = self.adapter.peripheral(periph_id).await?;
+        periph.set_trusted(!periph.is_trusted().await.unwrap()).await
     }
 
     pub async fn events(&self) -> Pin<Box<dyn Stream<Item = CentralEvent> + std::marker::Send>> {
@@ -88,6 +93,7 @@ impl BluetoothController {
             },
             connected: periph.is_connected().await.unwrap(),
             paired: periph.is_paired().await.unwrap(),
+            trusted: periph.is_trusted().await.unwrap(),
             rssi: properties.rssi,
             tx_power: properties.tx_power_level,
         }

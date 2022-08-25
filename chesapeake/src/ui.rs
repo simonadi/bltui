@@ -5,9 +5,13 @@ use tui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
     text::{Span, Spans, Text},
-    widgets::{Block, Borders, List, Paragraph},
+    widgets::{Block, Borders, List, Paragraph, StatefulWidget},
     Terminal,
 };
+
+struct QuestionPopup {
+
+}
 
 impl From<Device> for Text<'_> {
     fn from(device: Device) -> Text<'static> {
@@ -111,6 +115,14 @@ pub async fn draw_ui<B: Backend>(
                             Span::styled("no", Style::default().fg(Color::Red))
                         },
                     ]),
+                    Spans::from(vec![
+                        Span::raw("Trusted : "),
+                        if device.trusted {
+                            Span::styled("yes", Style::default().fg(Color::Green))
+                        } else {
+                            Span::styled("no", Style::default().fg(Color::Red))
+                        },
+                    ])
                 ])
             } else {
                 Text::from(vec![Spans::from(vec![Span::raw("")])])
@@ -156,7 +168,6 @@ pub async fn draw_ui<B: Backend>(
 
             let commands = Paragraph::new(commands_str).block(blue_box(None));
 
-
             let logger = tui_logger::TuiLoggerWidget::default()
                 .block(blue_box(None))
                 .style_error(Style::default().fg(Color::Red))
@@ -167,7 +178,6 @@ pub async fn draw_ui<B: Backend>(
                 .output_target(false)
                 .output_line(false)
                 .output_timestamp(Some("%F %H:%M:%S%.3f".to_string()));
-
 
             // rect.render_widget(title, chunks[0]);
             rect.render_widget(title, chunks[0]);
