@@ -19,7 +19,7 @@ pub struct DeviceId {
 }
 
 impl DeviceId {
-    pub(crate) fn new(object_path: &str) -> Self {
+    pub fn new(object_path: &str) -> Self {
         Self {
             object_path: object_path.to_owned().into(),
         }
@@ -77,6 +77,8 @@ pub struct DeviceInfo {
     pub paired: bool,
     /// Whether the device is currently connected to the adapter.
     pub connected: bool,
+    // Whether the device is currently trusted
+    pub trusted: bool,
     /// The Received Signal Strength Indicator of the device advertisement or inquiry.
     pub rssi: Option<i16>,
     /// The transmission power level advertised by the device.
@@ -120,6 +122,9 @@ impl DeviceInfo {
             connected: device_properties
                 .connected()
                 .ok_or(BluetoothError::RequiredPropertyMissing("Connected"))?,
+            trusted: device_properties
+                .trusted()
+                .ok_or(BluetoothError::RequiredPropertyMissing("Trusted"))?,
             rssi: device_properties.rssi(),
             tx_power: device_properties.tx_power(),
             manufacturer_data,

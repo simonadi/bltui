@@ -742,8 +742,15 @@ impl BluetoothSession {
         Ok(self.device(id, DBUS_METHOD_CALL_TIMEOUT).pair().await?)
     }
 
+    pub async fn set_trusted(&self, id: &DeviceId, trusted: bool) -> Result<(), BluetoothError> {
+        Ok(self.device(id, DBUS_METHOD_CALL_TIMEOUT).set_trusted(trusted).await?)
+    }
+
     pub async fn unpair(&self, id: &DeviceId) -> Result<(), BluetoothError> {
-        Ok(self.device(id, DBUS_METHOD_CALL_TIMEOUT).cancel_pairing().await?)
+        Ok(self
+            .device(id, DBUS_METHOD_CALL_TIMEOUT)
+            .cancel_pairing()
+            .await?)
     }
 
     /// Read the value of the given GATT characteristic.

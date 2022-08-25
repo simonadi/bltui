@@ -13,6 +13,8 @@ use uuid::Uuid;
 use super::device::{convert_manufacturer_data, convert_service_data, convert_services};
 use super::{AdapterId, CharacteristicId, DeviceId};
 
+const TEMP_CONST: &str = "org.bluez.Agent.RequestConfirmation";
+
 /// An event relating to a Bluetooth device or adapter.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BluetoothEvent {
@@ -37,6 +39,7 @@ pub enum BluetoothEvent {
         /// Details of the specific event.
         event: CharacteristicEvent,
     },
+    CustomEvent(String),
 }
 
 /// Details of an event related to a Bluetooth adapter.
@@ -133,8 +136,11 @@ impl BluetoothEvent {
         {
             Self::interfaces_added_to_events(interfaces_added)
         } else {
-            log::info!("Unexpected message: {:?}", message);
-            vec![]
+            vec![BluetoothEvent::CustomEvent(
+                message.interface().unwrap().to_string(),
+            )]
+            // log::info!("Unexpected message: {:?}", message);
+            // vec![]
         }
     }
 
@@ -244,7 +250,9 @@ impl BluetoothEvent {
                     })
                 }
             }
-            _ => {}
+            unknown_event => events.push(BluetoothEvent::CustomEvent(
+                unknown_event.to_owned().to_string(),
+            )),
         }
         events
     }
