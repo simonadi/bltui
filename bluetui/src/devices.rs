@@ -108,7 +108,6 @@ impl Default for Devices {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,7 +123,7 @@ mod tests {
             paired: false,
             trusted: false,
             rssi: None,
-            tx_power: None
+            tx_power: None,
         };
         devices.insert_or_replace(device);
     }

@@ -52,6 +52,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
+name = "bluetui"
+version = "0.1.0"
+dependencies = [
+ "bluez-async",
+ "btleplug",
+ "chrono",
+ "crossterm",
+ "dbus",
+ "dbus-crossroads",
+ "dbus-tokio",
+ "futures",
+ "log",
+ "simple-logging",
+ "tokio",
+ "tui",
+ "tui-logger",
+]
+
+[[package]]
 name = "bluez-async"
 version = "0.6.0"
 dependencies = [
@@ -129,21 +148,6 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
-
-[[package]]
-name = "chesapeake"
-version = "0.1.0"
-dependencies = [
- "btleplug",
- "chrono",
- "crossterm",
- "futures",
- "log",
- "simple-logging",
- "tokio",
- "tui",
- "tui-logger",
-]
 
 [[package]]
 name = "chrono"
@@ -278,6 +282,15 @@ dependencies = [
  "libc",
  "libdbus-sys",
  "winapi",
+]
+
+[[package]]
+name = "dbus-crossroads"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "554114296d012b33fdaf362a733db6dc5f73c4c9348b8b620ddd42e61b406e30"
+dependencies = [
+ "dbus",
 ]
 
 [[package]]

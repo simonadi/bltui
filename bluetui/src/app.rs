@@ -7,7 +7,7 @@ use log::{debug, info, trace, warn};
 use crate::agent::Agent;
 use crate::bluetooth::BluetoothController;
 use crate::devices::Devices;
-use crate::ui::{draw_ui, initialize_terminal};
+use crate::ui::ui::{draw_ui, initialize_terminal};
 
 pub struct App {
     state: std::sync::Arc<tokio::sync::Mutex<AppState>>,
@@ -23,6 +23,7 @@ impl AppState {
     pub fn new() -> AppState {
         AppState {
             devices: Devices::new(),
+            // popup: Option<QuestionPopupState>,
             hide_unnamed: false,
         }
     }
@@ -36,10 +37,6 @@ impl Default for AppState {
     fn default() -> AppState {
         Self::new()
     }
-}
-
-struct Hello {
-    called_count: u32,
 }
 
 impl App {
@@ -59,9 +56,10 @@ impl App {
         tui_logger::init_logger(log::LevelFilter::Info).unwrap();
 
         // let agent = Agent::new("/chesapeake/agent", "KeyboardDisplay");
-        // agent.start().await;
-        // agent.register_agent().await;
-        // agent.request_default_agent().await;
+        let agent = Agent::new("/chesapeake/agent", "NoInputNoOutput");
+        agent.start().await;
+        agent.register_agent().await;
+        agent.request_default_agent().await;
 
         let mut bt_events = self.bt_controller.events().await;
         let app_state_bt = std::sync::Arc::clone(&self.state);
@@ -167,9 +165,16 @@ impl App {
                             };
 
                             if let Some(device) = device_opt {
-                                info!("Triggering trust for device {} ({})", device.name, device.address);
-                                self.bt_controller.trigger_trust(&&device.periph_id).await.unwrap();
-                                let updated_device = self.bt_controller.get_device(&device.periph_id).await;
+                                info!(
+                                    "Triggering trust for device {} ({})",
+                                    device.name, device.address
+                                );
+                                self.bt_controller
+                                    .trigger_trust(&&device.periph_id)
+                                    .await
+                                    .unwrap();
+                                let updated_device =
+                                    self.bt_controller.get_device(&device.periph_id).await;
                                 let mut state = app_state_ui.lock().await;
                                 state.devices.insert_or_replace(updated_device);
                                 // TODO : device state doesn't get refreshed after trusting it since currently the refresh happens when receiving an event from the bluetooth process
@@ -192,6 +197,8 @@ impl App {
                             let mut state = app_state_ui.lock().await;
                             state.devices.move_selector_up();
                         }
+                        KeyCode::Right => {}
+                        KeyCode::Left => {}
                         KeyCode::Enter => {}
                         _ => {}
                     }

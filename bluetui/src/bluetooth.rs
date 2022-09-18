@@ -68,7 +68,9 @@ impl BluetoothController {
 
     pub async fn trigger_trust(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
         let periph = self.adapter.peripheral(periph_id).await?;
-        periph.set_trusted(!periph.is_trusted().await.unwrap()).await
+        periph
+            .set_trusted(!periph.is_trusted().await.unwrap())
+            .await
     }
 
     pub async fn events(&self) -> Pin<Box<dyn Stream<Item = CentralEvent> + std::marker::Send>> {

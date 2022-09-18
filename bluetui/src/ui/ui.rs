@@ -1,17 +1,14 @@
-use crate::{app::AppState, devices::Device};
+use crate::{app::AppState, devices::Device, ui::popup::*};
 use crossterm::terminal::enable_raw_mode;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
     text::{Span, Spans, Text},
-    widgets::{Block, Borders, List, Paragraph, StatefulWidget},
+    widgets::{Block, Borders, List, Paragraph},
     Terminal,
 };
-
-struct QuestionPopup {
-
-}
+use tui_logger::TuiLoggerWidget;
 
 impl From<Device> for Text<'_> {
     fn from(device: Device) -> Text<'static> {
@@ -48,6 +45,67 @@ fn blue_box(title: Option<String>) -> Block<'static> {
     } else {
         block
     }
+}
+
+fn get_logger_widget() -> TuiLoggerWidget<'static> {
+    tui_logger::TuiLoggerWidget::default()
+        .block(blue_box(None))
+        .style_error(Style::default().fg(Color::Red))
+        .style_warn(Style::default().fg(Color::Yellow))
+        .style_info(Style::default().fg(Color::White))
+        .output_level(Some(tui_logger::TuiLoggerLevelOutput::Long))
+        .output_file(false)
+        .output_target(false)
+        .output_line(false)
+        .output_timestamp(Some("%F %H:%M:%S%.3f".to_string()))
+}
+
+fn get_device_details(selected_device: Option<Device>) -> Paragraph<'static> {
+    let device_details_str = if let Some(device) = selected_device {
+        Text::from(vec![
+            Spans::from(Span::raw(device.name)),
+            Spans::from(Span::raw(format!("Address : {}", device.address))),
+            Spans::from(Span::raw(format!(
+                "Signal strenth : {} dBm",
+                device.rssi.unwrap_or(0)
+            ))),
+            Spans::from(Span::raw(format!(
+                "Tx power : {} dBm",
+                device.tx_power.unwrap_or(0)
+            ))),
+            Spans::from(vec![
+                Span::raw("Connected : "),
+                if device.connected {
+                    Span::styled("yes", Style::default().fg(Color::Green))
+                } else {
+                    Span::styled("no", Style::default().fg(Color::Red))
+                },
+            ]),
+            Spans::from(vec![
+                Span::raw("Paired : "),
+                if device.paired {
+                    Span::styled("yes", Style::default().fg(Color::Green))
+                } else {
+                    Span::styled("no", Style::default().fg(Color::Red))
+                },
+            ]),
+            Spans::from(vec![
+                Span::raw("Trusted : "),
+                if device.trusted {
+                    Span::styled("yes", Style::default().fg(Color::Green))
+                } else {
+                    Span::styled("no", Style::default().fg(Color::Red))
+                },
+            ]),
+        ])
+    } else {
+        Text::from(vec![Spans::from(vec![Span::raw("")])])
+    };
+
+    Paragraph::new(device_details_str)
+        .style(Style::default())
+        .alignment(Alignment::Left)
+        .block(blue_box(Some(String::from("Details"))))
 }
 
 pub async fn draw_ui<B: Backend>(
@@ -87,51 +145,7 @@ pub async fn draw_ui<B: Backend>(
                 .alignment(Alignment::Center)
                 .block(blue_box(None));
 
-            let device_details_str = if let Some(device) = selected_device {
-                Text::from(vec![
-                    Spans::from(Span::raw(device.name)),
-                    Spans::from(Span::raw(format!("Address : {}", device.address))),
-                    Spans::from(Span::raw(format!(
-                        "Signal strenth : {} dBm",
-                        device.rssi.unwrap_or(0)
-                    ))),
-                    Spans::from(Span::raw(format!(
-                        "Tx power : {} dBm",
-                        device.tx_power.unwrap_or(0)
-                    ))),
-                    Spans::from(vec![
-                        Span::raw("Connected : "),
-                        if device.connected {
-                            Span::styled("yes", Style::default().fg(Color::Green))
-                        } else {
-                            Span::styled("no", Style::default().fg(Color::Red))
-                        },
-                    ]),
-                    Spans::from(vec![
-                        Span::raw("Paired : "),
-                        if device.paired {
-                            Span::styled("yes", Style::default().fg(Color::Green))
-                        } else {
-                            Span::styled("no", Style::default().fg(Color::Red))
-                        },
-                    ]),
-                    Spans::from(vec![
-                        Span::raw("Trusted : "),
-                        if device.trusted {
-                            Span::styled("yes", Style::default().fg(Color::Green))
-                        } else {
-                            Span::styled("no", Style::default().fg(Color::Red))
-                        },
-                    ])
-                ])
-            } else {
-                Text::from(vec![Spans::from(vec![Span::raw("")])])
-            };
-
-            let device_details = Paragraph::new(device_details_str)
-                .style(Style::default())
-                .alignment(Alignment::Left)
-                .block(blue_box(Some(String::from("Details"))));
+            let device_details = get_device_details(selected_device);
 
             let devices = state.devices();
             let devices_items = devices.list_items();
@@ -168,30 +182,25 @@ pub async fn draw_ui<B: Backend>(
 
             let commands = Paragraph::new(commands_str).block(blue_box(None));
 
-            let logger = tui_logger::TuiLoggerWidget::default()
-                .block(blue_box(None))
-                .style_error(Style::default().fg(Color::Red))
-                .style_warn(Style::default().fg(Color::Yellow))
-                .style_info(Style::default().fg(Color::White))
-                .output_level(Some(tui_logger::TuiLoggerLevelOutput::Long))
-                .output_file(false)
-                .output_target(false)
-                .output_line(false)
-                .output_timestamp(Some("%F %H:%M:%S%.3f".to_string()));
+            let logger = get_logger_widget();
 
-            // rect.render_widget(title, chunks[0]);
             rect.render_widget(title, chunks[0]);
             rect.render_widget(commands, chunks[2]);
             rect.render_stateful_widget(list, main_chunks[0], &mut state.devices().list_state);
             rect.render_widget(logger, right_chunks[1]);
             rect.render_widget(device_details, right_chunks[0]);
-            // rect.render_widget(known_devices)
 
             if false {
-                let block = Block::default()
-                    .title("Popup")
-                    .borders(Borders::ALL)
-                    .style(Style::default().bg(Color::Blue));
+                let popup = QuestionPopup::new(
+                    String::from("Confirm pairing"),
+                    vec![
+                        QuestionPopupItem::unstyled(String::from("Yes")),
+                        QuestionPopupItem::unstyled(String::from("No")),
+                    ],
+                )
+                .style(Style::default().bg(Color::Blue))
+                .highlight_style(Style::default().bg(Color::White));
+
                 let vertical_chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([
@@ -210,7 +219,7 @@ pub async fn draw_ui<B: Backend>(
                     ])
                     .split(vertical_chunks[1])[1];
 
-                rect.render_widget(block, popup_chunk);
+                rect.render_stateful_widget(popup, popup_chunk, &mut QuestionPopupState::default());
             }
         })
         .unwrap();

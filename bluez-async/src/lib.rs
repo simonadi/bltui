@@ -743,7 +743,10 @@ impl BluetoothSession {
     }
 
     pub async fn set_trusted(&self, id: &DeviceId, trusted: bool) -> Result<(), BluetoothError> {
-        Ok(self.device(id, DBUS_METHOD_CALL_TIMEOUT).set_trusted(trusted).await?)
+        Ok(self
+            .device(id, DBUS_METHOD_CALL_TIMEOUT)
+            .set_trusted(trusted)
+            .await?)
     }
 
     pub async fn unpair(&self, id: &DeviceId) -> Result<(), BluetoothError> {

@@ -1,12 +1,13 @@
-use dbus::blocking::BlockingSender;
+use std::sync::Arc;
+
 use dbus::channel::MatchingReceiver;
 use dbus::message::MatchRule;
 use dbus::nonblock::stdintf::org_freedesktop_dbus::RequestNameReply;
 use dbus::Message;
+use dbus::{blocking::BlockingSender, nonblock::SyncConnection};
 use dbus_crossroads::{Crossroads, IfaceBuilder};
 
 use log::info;
-
 
 pub struct Agent<'a> {
     path: dbus::Path<'a>,
@@ -14,7 +15,7 @@ pub struct Agent<'a> {
     connection: dbus::blocking::Connection,
 }
 
-impl Agent<'_> {
+impl Agent<'static> {
     pub fn new(path: &str, capability: &str) -> Agent<'static> {
         let connection = dbus::blocking::Connection::new_system().unwrap();
         Agent {
@@ -58,32 +59,40 @@ impl Agent<'_> {
         info!("Agent is now the default agent");
     }
 
+    async fn request_name(&self, c: &Arc<SyncConnection>) -> Result<(), dbus::Error> {
+        let request_reply = c
+            .request_name("chesapeake.agent", false, true, true)
+            .await?;
+
+        match request_reply {
+            RequestNameReply::AlreadyOwner => {
+                info!("already owner");
+            }
+            RequestNameReply::Exists => {
+                info!("exists");
+            }
+            RequestNameReply::InQueue => {
+                info!("in queue");
+            }
+            RequestNameReply::PrimaryOwner => {
+                info!("primary owner");
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn start(&self) {
         let (resource, c) = dbus_tokio::connection::new_system_sync().unwrap();
 
+        // Spawn a task that polls the Dbus to check that the connection is still alive.
+        // Panics when it's lost
         let _handle = tokio::spawn(async {
             let err = resource.await;
             panic!("Lost connection to D-Bus: {}", err);
         });
 
-        let request_reply = c
-            .request_name("chesapeake.agent", false, true, true)
-            .await
-            .unwrap();
-        match request_reply {
-            RequestNameReply::AlreadyOwner => {
-                info!("already owner")
-            }
-            RequestNameReply::Exists => {
-                info!("exists")
-            }
-            RequestNameReply::InQueue => {
-                info!("in queue")
-            }
-            RequestNameReply::PrimaryOwner => {
-                info!("primary owner")
-            }
-        }
+        self.request_name(&c).await.unwrap();
 
         let mut cr = Crossroads::new();
         cr.set_async_support(Some((
@@ -175,7 +184,7 @@ impl Agent<'_> {
             });
         });
 
-        let address = "/chesapeake/agent";
+        let address = self.path.clone();
 
         cr.insert(address, &[iface_token], ());
 
@@ -192,4 +201,3 @@ impl Agent<'_> {
         });
     }
 }
-

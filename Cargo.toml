@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "btleplug",
-    "chesapeake",
+    "bluetui",
     "bluez-async",
     "bluez-generated",
 ]
