@@ -75,7 +75,7 @@ version = "0.6.0"
 dependencies = [
  "async-trait",
  "bitflags",
- "bluez-generated 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bluez-generated",
  "dbus",
  "dbus-tokio",
  "eyre",
@@ -88,13 +88,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "uuid",
-]
-
-[[package]]
-name = "bluez-generated"
-version = "0.2.1"
-dependencies = [
- "dbus",
 ]
 
 [[package]]

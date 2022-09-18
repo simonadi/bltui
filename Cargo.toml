@@ -3,5 +3,4 @@ members = [
     "btleplug",
     "bluetui",
     "bluez-async",
-    "bluez-generated",
 ]
