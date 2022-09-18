@@ -17,7 +17,7 @@ pub struct Device {
     pub name: String,
     pub connected: bool,
     pub paired: bool,
-    pub trusted: bool,
+    // pub trusted: bool,
     pub rssi: Option<i16>,
     pub tx_power: Option<i16>,
 }
@@ -121,7 +121,7 @@ mod tests {
             name: "name".to_string(),
             connected: false,
             paired: false,
-            trusted: false,
+            // trusted: false,
             rssi: None,
             tx_power: None,
         };

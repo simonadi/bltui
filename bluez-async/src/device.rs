@@ -313,6 +313,7 @@ mod tests {
         device_properties.insert("Paired".to_string(), Variant(Box::new(false)));
         device_properties.insert("Connected".to_string(), Variant(Box::new(false)));
         device_properties.insert("ServicesResolved".to_string(), Variant(Box::new(false)));
+        device_properties.insert("Trusted".to_string(), Variant(Box::new(false)));
 
         let device =
             DeviceInfo::from_properties(id.clone(), OrgBluezDevice1Properties(&device_properties))
@@ -328,6 +329,7 @@ mod tests {
                 services: vec![],
                 paired: false,
                 connected: false,
+                trusted: false,
                 rssi: None,
                 tx_power: None,
                 manufacturer_data: HashMap::new(),

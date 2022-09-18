@@ -2,7 +2,7 @@ use btleplug::api::CentralEvent;
 use crossterm::event::{Event, KeyCode};
 use crossterm::terminal::disable_raw_mode;
 use futures::stream::StreamExt;
-use log::{debug, info, trace, warn};
+use log::{debug, error, info, trace, warn};
 
 use crate::agent::Agent;
 use crate::bluetooth::BluetoothController;
@@ -56,7 +56,7 @@ impl App {
         tui_logger::init_logger(log::LevelFilter::Info).unwrap();
 
         // let agent = Agent::new("/chesapeake/agent", "KeyboardDisplay");
-        let agent = Agent::new("/chesapeake/agent", "NoInputNoOutput");
+        let agent = Agent::new("/bluetui/agent", "NoInputNoOutput");
         agent.start().await;
         agent.register_agent().await;
         agent.request_default_agent().await;
@@ -92,9 +92,9 @@ impl App {
                         let mut state = app_state_bt.lock().await;
                         state.devices.insert_or_replace(device);
                     }
-                    CentralEvent::CustomEvent(message) => {
-                        warn!("Received a custom event : {}", message);
-                    }
+                    // CentralEvent::CustomEvent(message) => {
+                    //     warn!("Received a custom event : {}", message);
+                    // }
                     _ => {}
                 }
             }
@@ -127,10 +127,14 @@ impl App {
                                     "Trying to disconnect from {} ({})",
                                     device.name, device.address
                                 );
-                                self.bt_controller
+                                if self
+                                    .bt_controller
                                     .disconnect(&device.periph_id)
                                     .await
-                                    .unwrap();
+                                    .is_err()
+                                {
+                                    error!("Failed to disconnect");
+                                }
                             }
                         }
                         KeyCode::Char('c') => {
@@ -143,7 +147,10 @@ impl App {
                                 info!("Trying to connect to {} ({})", device.name, device.address);
                                 let bt_controller_temp = self.bt_controller.clone();
                                 tokio::spawn(async move {
-                                    bt_controller_temp.connect(&device.periph_id).await.unwrap();
+                                    if bt_controller_temp.connect(&device.periph_id).await.is_err()
+                                    {
+                                        error!("Failed to connect");
+                                    }
                                 });
                             }
                         }
@@ -158,28 +165,28 @@ impl App {
                                 self.bt_controller.pair(&&device.periph_id).await.unwrap();
                             }
                         }
-                        KeyCode::Char('t') => {
-                            let device_opt = {
-                                let state = app_state_ui.lock().await;
-                                state.devices.get_selected_device().await
-                            };
+                        // KeyCode::Char('t') => {
+                        //     let device_opt = {
+                        //         let state = app_state_ui.lock().await;
+                        //         state.devices.get_selected_device().await
+                        //     };
 
-                            if let Some(device) = device_opt {
-                                info!(
-                                    "Triggering trust for device {} ({})",
-                                    device.name, device.address
-                                );
-                                self.bt_controller
-                                    .trigger_trust(&&device.periph_id)
-                                    .await
-                                    .unwrap();
-                                let updated_device =
-                                    self.bt_controller.get_device(&device.periph_id).await;
-                                let mut state = app_state_ui.lock().await;
-                                state.devices.insert_or_replace(updated_device);
-                                // TODO : device state doesn't get refreshed after trusting it since currently the refresh happens when receiving an event from the bluetooth process
-                            }
-                        }
+                        //     if let Some(device) = device_opt {
+                        //         info!(
+                        //             "Triggering trust for device {} ({})",
+                        //             device.name, device.address
+                        //         );
+                        //         self.bt_controller
+                        //             .trigger_trust(&&device.periph_id)
+                        //             .await
+                        //             .unwrap();
+                        //         let updated_device =
+                        //             self.bt_controller.get_device(&device.periph_id).await;
+                        //         let mut state = app_state_ui.lock().await;
+                        //         state.devices.insert_or_replace(updated_device);
+                        //         // TODO : device state doesn't get refreshed after trusting it since currently the refresh happens when receiving an event from the bluetooth process
+                        //     }
+                        // }
                         KeyCode::Char('h') => {
                             // Hide unnamed devices
                             let mut state = app_state_ui.lock().await;
@@ -187,7 +194,9 @@ impl App {
                         }
                         KeyCode::Char('s') => {
                             // Trigger scan
-                            self.bt_controller.trigger_scan().await.unwrap();
+                            if self.bt_controller.trigger_scan().await.is_err() {
+                                error!("Failed to switch scan");
+                            }
                         }
                         KeyCode::Down => {
                             let mut state = app_state_ui.lock().await;

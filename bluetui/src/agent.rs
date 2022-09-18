@@ -39,6 +39,8 @@ impl Agent<'static> {
             .send_with_reply_and_block(m, std::time::Duration::from_secs(2))
             .unwrap();
 
+        info!("message : {:?}", r);
+
         info!("Registered the agent");
     }
 
@@ -60,9 +62,7 @@ impl Agent<'static> {
     }
 
     async fn request_name(&self, c: &Arc<SyncConnection>) -> Result<(), dbus::Error> {
-        let request_reply = c
-            .request_name("chesapeake.agent", false, true, true)
-            .await?;
+        let request_reply = c.request_name("bluetui.agent", false, true, true).await?;
 
         match request_reply {
             RequestNameReply::AlreadyOwner => {

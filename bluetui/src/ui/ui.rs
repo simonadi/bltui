@@ -1,4 +1,4 @@
-use crate::{app::AppState, devices::Device, ui::popup::*};
+use crate::{app::AppState, devices::Device};
 use crossterm::terminal::enable_raw_mode;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -89,14 +89,14 @@ fn get_device_details(selected_device: Option<Device>) -> Paragraph<'static> {
                     Span::styled("no", Style::default().fg(Color::Red))
                 },
             ]),
-            Spans::from(vec![
-                Span::raw("Trusted : "),
-                if device.trusted {
-                    Span::styled("yes", Style::default().fg(Color::Green))
-                } else {
-                    Span::styled("no", Style::default().fg(Color::Red))
-                },
-            ]),
+            // Spans::from(vec![
+            //     Span::raw("Trusted : "),
+            //     if device.trusted {
+            //         Span::styled("yes", Style::default().fg(Color::Green))
+            //     } else {
+            //         Span::styled("no", Style::default().fg(Color::Red))
+            //     },
+            // ]),
         ])
     } else {
         Text::from(vec![Spans::from(vec![Span::raw("")])])
@@ -140,7 +140,7 @@ pub async fn draw_ui<B: Backend>(
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .split(main_chunks[1]);
 
-            let title = Paragraph::new("Chesapeake")
+            let title = Paragraph::new("bluetui")
                 .style(Style::default().fg(Color::White))
                 .alignment(Alignment::Center)
                 .block(blue_box(None));
@@ -190,37 +190,37 @@ pub async fn draw_ui<B: Backend>(
             rect.render_widget(logger, right_chunks[1]);
             rect.render_widget(device_details, right_chunks[0]);
 
-            if false {
-                let popup = QuestionPopup::new(
-                    String::from("Confirm pairing"),
-                    vec![
-                        QuestionPopupItem::unstyled(String::from("Yes")),
-                        QuestionPopupItem::unstyled(String::from("No")),
-                    ],
-                )
-                .style(Style::default().bg(Color::Blue))
-                .highlight_style(Style::default().bg(Color::White));
+            // if false {
+            //     let popup = QuestionPopup::new(
+            //         String::from("Confirm pairing"),
+            //         vec![
+            //             QuestionPopupItem::unstyled(String::from("Yes")),
+            //             QuestionPopupItem::unstyled(String::from("No")),
+            //         ],
+            //     )
+            //     .style(Style::default().bg(Color::Blue))
+            //     .highlight_style(Style::default().bg(Color::White));
 
-                let vertical_chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .constraints([
-                        Constraint::Percentage(45),
-                        Constraint::Length(4),
-                        Constraint::Percentage(45),
-                    ])
-                    .split(size);
+            //     let vertical_chunks = Layout::default()
+            //         .direction(Direction::Vertical)
+            //         .constraints([
+            //             Constraint::Percentage(45),
+            //             Constraint::Length(4),
+            //             Constraint::Percentage(45),
+            //         ])
+            //         .split(size);
 
-                let popup_chunk = Layout::default()
-                    .direction(Direction::Horizontal)
-                    .constraints([
-                        Constraint::Percentage(20),
-                        Constraint::Percentage(60),
-                        Constraint::Percentage(20),
-                    ])
-                    .split(vertical_chunks[1])[1];
+            //     let popup_chunk = Layout::default()
+            //         .direction(Direction::Horizontal)
+            //         .constraints([
+            //             Constraint::Percentage(20),
+            //             Constraint::Percentage(60),
+            //             Constraint::Percentage(20),
+            //         ])
+            //         .split(vertical_chunks[1])[1];
 
-                rect.render_stateful_widget(popup, popup_chunk, &mut QuestionPopupState::default());
-            }
+            //     rect.render_stateful_widget(popup, popup_chunk, &mut QuestionPopupState::default());
+            // }
         })
         .unwrap();
 }

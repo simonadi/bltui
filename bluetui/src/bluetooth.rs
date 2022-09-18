@@ -40,6 +40,7 @@ impl BluetoothController {
         let periph = self.adapter.peripheral(periph_id).await?;
 
         if periph.is_connected().await.unwrap() {
+            info!("Device is already connected");
             Ok(())
         } else {
             periph.connect().await
@@ -50,6 +51,7 @@ impl BluetoothController {
         let periph = self.adapter.peripheral(periph_id).await?;
 
         if !periph.is_connected().await.unwrap() {
+            info!("Device already disconnected");
             Ok(())
         } else {
             periph.disconnect().await
@@ -66,12 +68,12 @@ impl BluetoothController {
         }
     }
 
-    pub async fn trigger_trust(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
-        let periph = self.adapter.peripheral(periph_id).await?;
-        periph
-            .set_trusted(!periph.is_trusted().await.unwrap())
-            .await
-    }
+    // pub async fn trigger_trust(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
+    //     let periph = self.adapter.peripheral(periph_id).await?;
+    //     periph
+    //         .set_trusted(!periph.is_trusted().await.unwrap())
+    //         .await
+    // }
 
     pub async fn events(&self) -> Pin<Box<dyn Stream<Item = CentralEvent> + std::marker::Send>> {
         self.adapter.events().await.unwrap()
@@ -95,7 +97,7 @@ impl BluetoothController {
             },
             connected: periph.is_connected().await.unwrap(),
             paired: periph.is_paired().await.unwrap(),
-            trusted: periph.is_trusted().await.unwrap(),
+            // trusted: periph.is_trusted().await.unwrap(),
             rssi: properties.rssi,
             tx_power: properties.tx_power_level,
         }

@@ -55,7 +55,6 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 name = "bluetui"
 version = "0.1.0"
 dependencies = [
- "bluez-async",
  "btleplug",
  "chrono",
  "crossterm",
@@ -76,7 +75,7 @@ version = "0.6.0"
 dependencies = [
  "async-trait",
  "bitflags",
- "bluez-generated",
+ "bluez-generated 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "dbus",
  "dbus-tokio",
  "eyre",
@@ -94,6 +93,15 @@ dependencies = [
 [[package]]
 name = "bluez-generated"
 version = "0.2.1"
+dependencies = [
+ "dbus",
+]
+
+[[package]]
+name = "bluez-generated"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33ad8f302dd79411881cd0181f3bd9fc91a959b71c3a13159bd8a07d2c40dc7f"
 dependencies = [
  "dbus",
 ]
@@ -962,9 +970,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.20.0"
+version = "1.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57aec3cfa4c296db7255446efb4928a6be304b431a806216105542a67b6ca82e"
+checksum = "0020c875007ad96677dcc890298f4b942882c5d4eb7cc8f439fc3bf813dc9c95"
 dependencies = [
  "autocfg",
  "bytes",
