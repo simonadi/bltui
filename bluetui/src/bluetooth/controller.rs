@@ -59,23 +59,6 @@ impl BluetoothController {
         }
     }
 
-    pub async fn pair(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
-        let periph = self.adapter.peripheral(periph_id).await?;
-
-        if !periph.is_paired().await.unwrap() {
-            periph.pair().await
-        } else {
-            Ok(())
-        }
-    }
-
-    // pub async fn trigger_trust(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
-    //     let periph = self.adapter.peripheral(periph_id).await?;
-    //     periph
-    //         .set_trusted(!periph.is_trusted().await.unwrap())
-    //         .await
-    // }
-
     pub async fn events(&self) -> Pin<Box<dyn Stream<Item = CentralEvent> + std::marker::Send>> {
         self.adapter.events().await.unwrap()
     }

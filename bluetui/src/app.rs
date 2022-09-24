@@ -203,39 +203,6 @@ impl App {
                                 });
                             }
                         }
-                        KeyCode::Char('p') => {
-                            let device_opt = {
-                                let state = app_state_ui.lock().await;
-                                state.devices.get_selected_device().await
-                            };
-
-                            if let Some(device) = device_opt {
-                                info!("Trying to pair to {} ({})", device.name, device.address);
-                                self.bt_controller.pair(&&device.periph_id).await.unwrap();
-                            }
-                        }
-                        // KeyCode::Char('t') => {
-                        //     let device_opt = {
-                        //         let state = app_state_ui.lock().await;
-                        //         state.devices.get_selected_device().await
-                        //     };
-
-                        //     if let Some(device) = device_opt {
-                        //         info!(
-                        //             "Triggering trust for device {} ({})",
-                        //             device.name, device.address
-                        //         );
-                        //         self.bt_controller
-                        //             .trigger_trust(&&device.periph_id)
-                        //             .await
-                        //             .unwrap();
-                        //         let updated_device =
-                        //             self.bt_controller.get_device(&device.periph_id).await;
-                        //         let mut state = app_state_ui.lock().await;
-                        //         state.devices.insert_or_replace(updated_device);
-                        //         // TODO : device state doesn't get refreshed after trusting it since currently the refresh happens when receiving an event from the bluetooth process
-                        //     }
-                        // }
                         KeyCode::Char('s') => {
                             // Trigger scan
                             if self.bt_controller.trigger_scan().await.is_err() {

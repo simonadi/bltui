@@ -7,6 +7,7 @@ use tui::{
 };
 
 mod widgets;
+pub mod popup;
 
 use self::widgets::{
     device_details::get_device_details,
