@@ -4,30 +4,35 @@ root := justfile_directory()
 install:
     #!/bin/sh
     cd {{root}}
-    cargo clean
-    rm -rf bluetui-0.1.0
-    mkdir bluetui-0.1.0
-    cp -r src bluetui-0.1.0
-    cp Cargo.toml bluetui-0.1.0
-    cp Cargo.lock bluetui-0.1.0
-    tar czf ../bluetui-0.1.0.tar.gz bluetui-0.1.0
-    mv ../bluetui-0.1.0.tar.gz .
+    just clean
+    mkdir -p temp/bluetui-0.1.0
+    cp -r bluetui temp/bluetui-0.1.0
+    cp -r bluez-async temp/bluetui-0.1.0
+    cp -r btleplug temp/bluetui-0.1.0
+    cp Cargo.toml temp/bluetui-0.1.0
+    cp Cargo.lock temp/bluetui-0.1.0
+    ln ./PKGBUILD ./temp/PKGBUILD
+    cd temp
+    tar czf bluetui-0.1.0.tar.gz bluetui-0.1.0
+    sed -i --follow-symlinks '$ d' PKGBUILD
     makepkg -g >> PKGBUILD
-    makepkg -si
+    makepkg --force -si
+    just clean
 
 fmt:
     cargo +nightly fmt
 
-run:
-    cargo run --release
+run *ARGS:
+    cargo run --release -- {{ ARGS }}
 
 clean:
-    cargo clean
+    #cargo clean
     rm -rf logs
+    rm -rf temp
     rm -rf pkg
     rm -f **/*.tar.gz
     rm -f *.pkg.tar.zst
-    rm -rf src/bluetui-*
+    rm -rf src
     rm -rf bluetui-*
 
 check:
