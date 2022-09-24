@@ -56,10 +56,9 @@ impl App {
         tui_logger::init_logger(log::LevelFilter::Info).unwrap();
 
         // let agent = Agent::new("/chesapeake/agent", "KeyboardDisplay");
-        let agent = Agent::new("/bluetui/agent", "NoInputNoOutput");
+        let agent = Agent::new("/bluetui/agent", "KeyboardDisplay");
         agent.start().await;
-        agent.register_agent().await;
-        agent.request_default_agent().await;
+        agent.register_and_request_default_agent().await;
 
         let mut bt_events = self.bt_controller.events().await;
         let app_state_bt = std::sync::Arc::clone(&self.state);

@@ -52,7 +52,7 @@ fn get_logger_widget() -> TuiLoggerWidget<'static> {
         .block(blue_box(None))
         .style_error(Style::default().fg(Color::Red))
         .style_warn(Style::default().fg(Color::Yellow))
-        .style_info(Style::default().fg(Color::White))
+        .style_info(Style::default().fg(Color::Red))
         .output_level(Some(tui_logger::TuiLoggerLevelOutput::Long))
         .output_file(false)
         .output_target(false)

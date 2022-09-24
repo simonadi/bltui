@@ -12,20 +12,19 @@ use log::info;
 pub struct Agent<'a> {
     path: dbus::Path<'a>,
     capability: String,
-    connection: dbus::blocking::Connection,
 }
 
 impl Agent<'static> {
     pub fn new(path: &str, capability: &str) -> Agent<'static> {
-        let connection = dbus::blocking::Connection::new_system().unwrap();
         Agent {
             path: dbus::Path::new(path).unwrap(),
             capability: capability.to_string(),
-            connection,
         }
     }
 
-    pub async fn register_agent(&self) {
+    pub async fn register_and_request_default_agent(&self) {
+        let connection = dbus::blocking::Connection::new_system().unwrap();
+
         let m = Message::new_method_call(
             "org.bluez",
             "/org/bluez",
@@ -34,17 +33,14 @@ impl Agent<'static> {
         )
         .unwrap()
         .append2(&self.path, &self.capability);
-        let r = self
-            .connection
+        let r = connection
             .send_with_reply_and_block(m, std::time::Duration::from_secs(2))
             .unwrap();
 
         info!("message : {:?}", r);
 
         info!("Registered the agent");
-    }
 
-    pub async fn request_default_agent(&self) {
         let m = Message::new_method_call(
             "org.bluez",
             "/org/bluez",
@@ -53,8 +49,7 @@ impl Agent<'static> {
         )
         .unwrap()
         .append1(&self.path);
-        let r = self
-            .connection
+        let r = connection
             .send_with_reply_and_block(m, std::time::Duration::from_secs(2))
             .unwrap();
 
@@ -92,7 +87,7 @@ impl Agent<'static> {
             panic!("Lost connection to D-Bus: {}", err);
         });
 
-        self.request_name(&c).await.unwrap();
+        // self.request_name(&c).await.unwrap();
 
         let mut cr = Crossroads::new();
         cr.set_async_support(Some((
