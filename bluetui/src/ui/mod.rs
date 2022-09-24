@@ -6,6 +6,8 @@ use tui::{
     Terminal,
 };
 
+mod widgets;
+
 use self::widgets::{
     device_details::get_device_details,
     devices::devices_list,
@@ -13,7 +15,6 @@ use self::widgets::{
     statics::{commands, title},
 };
 
-mod widgets;
 
 pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
     let stdout = std::io::stdout();

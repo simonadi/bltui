@@ -9,6 +9,8 @@ pub fn get_logger_widget() -> TuiLoggerWidget<'static> {
         .style_error(Style::default().fg(Color::Red))
         .style_warn(Style::default().fg(Color::Yellow))
         .style_info(Style::default().fg(Color::White))
+        .style_debug(Style::default().fg(Color::Gray))
+        .style_trace(Style::default().fg(Color::Gray))
         .output_level(Some(tui_logger::TuiLoggerLevelOutput::Long))
         .output_file(false)
         .output_target(false)

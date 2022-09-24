@@ -18,12 +18,26 @@ use crate::{
 pub struct App {
     state: std::sync::Arc<tokio::sync::Mutex<AppState>>,
     bt_controller: BluetoothController,
+    settings: AppSettings,
+}
+
+struct AppSettings {
+    log_level: log::LevelFilter,
+    show_unknown: bool,
+}
+
+impl AppSettings {
+    pub fn new(log_level: log::LevelFilter, show_unknown: bool) -> AppSettings {
+        AppSettings {
+            log_level,
+            show_unknown,
+        }
+    }
 }
 
 #[derive(Clone)]
 pub struct AppState {
     pub devices: Devices,
-    pub hide_unnamed: bool,
 }
 
 impl AppState {
@@ -31,7 +45,6 @@ impl AppState {
         AppState {
             devices: Devices::new(),
             // popup: Option<QuestionPopupState>,
-            hide_unnamed: false,
         }
     }
 
@@ -47,7 +60,7 @@ impl Default for AppState {
 }
 
 impl App {
-    pub async fn new() -> App {
+    pub async fn new(logging_level: log::LevelFilter, show_unknown: bool) -> App {
         info!("Initializing the app");
 
         let app_state = std::sync::Arc::new(tokio::sync::Mutex::new(AppState::new()));
@@ -56,46 +69,52 @@ impl App {
         App {
             state: app_state,
             bt_controller,
+            settings: AppSettings::new(logging_level, show_unknown),
         }
     }
 
-    pub async fn start(&mut self) {
-        tui_logger::init_logger(log::LevelFilter::Info).unwrap();
+    async fn spawn_bt_event_handler(&self) {
+        let bt_controller = self.bt_controller.clone();
+        let state = std::sync::Arc::clone(&self.state);
+        let mut bt_events = bt_controller.events().await;
+        let show_unknown = self.settings.show_unknown;
 
-        let agent = Agent::new("/bluetui/agent", AgentCapability::NoInputNoOutput);
-        agent.start().await;
-        agent.register_and_request_default_agent().await;
-
-        let mut bt_events = self.bt_controller.events().await;
-        let app_state_bt = std::sync::Arc::clone(&self.state);
-        let ev_bt_controller = self.bt_controller.clone();
         tokio::spawn(async move {
             while let Some(event) = bt_events.next().await {
-                trace!("Received a new event : {:?}", event);
+                trace!("Receveived a new event : {:?}", event);
+
                 match event {
                     CentralEvent::DeviceDiscovered(id) => {
-                        let device = ev_bt_controller.get_device(&id).await;
+                        let device = bt_controller.get_device(&id).await;
                         debug!("New device : {} ({})", device.name, device.address);
 
-                        let mut state = app_state_bt.lock().await;
-                        state.devices.insert_or_replace(device);
+                        if device.name != "Unknown" || show_unknown {
+                            let mut state = state.lock().await;
+                            state.devices.insert_or_replace(device);
+                        }
                     }
                     CentralEvent::DeviceUpdated(id) => {
-                        let device = ev_bt_controller.get_device(&id).await;
-                        let mut state = app_state_bt.lock().await;
-                        state.devices.insert_or_replace(device);
+                        let device = bt_controller.get_device(&id).await;
+                        if device.name != "Unknown" || show_unknown {
+                            let mut state = state.lock().await;
+                            state.devices.insert_or_replace(device);
+                        }
                     }
                     CentralEvent::DeviceConnected(id) => {
-                        let device = ev_bt_controller.get_device(&id).await;
+                        let device = bt_controller.get_device(&id).await;
                         info!("Connected to {} ({})", device.name, device.address);
-                        let mut state = app_state_bt.lock().await;
-                        state.devices.insert_or_replace(device);
+                        if device.name != "Unknown" || show_unknown {
+                            let mut state = state.lock().await;
+                            state.devices.insert_or_replace(device);
+                        }
                     }
                     CentralEvent::DeviceDisconnected(id) => {
-                        let device = ev_bt_controller.get_device(&id).await;
+                        let device = bt_controller.get_device(&id).await;
                         info!("Disconnected from {} ({})", device.name, device.address);
-                        let mut state = app_state_bt.lock().await;
-                        state.devices.insert_or_replace(device);
+                        if device.name != "Unknown" || show_unknown {
+                            let mut state = state.lock().await;
+                            state.devices.insert_or_replace(device);
+                        }
                     }
                     // CentralEvent::CustomEvent(message) => {
                     //     warn!("Received a custom event : {}", message);
@@ -104,16 +123,24 @@ impl App {
                 }
             }
         });
+    }
+
+    pub async fn start(&mut self) {
+        tui_logger::init_logger(self.settings.log_level).unwrap();
+        tui_logger::set_default_level(self.settings.log_level);
+
+        let agent = Agent::new("/bluetui/agent", AgentCapability::NoInputNoOutput);
+        agent.start().await;
+        agent.register_and_request_default_agent().await;
+
+        self.spawn_bt_event_handler().await;
 
         let mut terminal = initialize_terminal();
         let tick_rate = std::time::Duration::from_millis(7);
 
         let app_state_ui = std::sync::Arc::clone(&self.state);
-        let mut frame_times = Vec::new();
 
         loop {
-            let starting_time = std::time::Instant::now();
-
             if crossterm::event::poll(tick_rate).unwrap() {
                 if let Event::Key(key) = crossterm::event::read().unwrap() {
                     match key.code {
@@ -192,11 +219,6 @@ impl App {
                         //         // TODO : device state doesn't get refreshed after trusting it since currently the refresh happens when receiving an event from the bluetooth process
                         //     }
                         // }
-                        KeyCode::Char('h') => {
-                            // Hide unnamed devices
-                            let mut state = app_state_ui.lock().await;
-                            state.hide_unnamed = !state.hide_unnamed;
-                        }
                         KeyCode::Char('s') => {
                             // Trigger scan
                             if self.bt_controller.trigger_scan().await.is_err() {
@@ -220,19 +242,6 @@ impl App {
             }
 
             draw_frame(&mut terminal, &app_state_ui, self.bt_controller.scanning).await;
-            frame_times.push(starting_time.elapsed());
-
-            if frame_times.len() % 100 == 1 {
-                debug!(
-                    "Avg frame time : {:?}",
-                    frame_times
-                        .clone()
-                        .into_iter()
-                        .reduce(|a, b| a + b)
-                        .unwrap()
-                        / frame_times.len() as u32
-                );
-            }
         }
         info!("Quitting");
         disable_raw_mode().unwrap();

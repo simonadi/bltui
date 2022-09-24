@@ -21,3 +21,4 @@ tui-logger="0.8"
 dbus = { version = "0.9", features = ["futures"] }
 dbus-crossroads = "0.5.1"
 dbus-tokio = "0.7.5"
+clap = { version = "3.2.22", features = ["derive"] }
