@@ -2,8 +2,7 @@
 //! know them, i.e. connected devices.
 
 use bluez_async::{BleUuid, BluetoothSession, CharacteristicFlags};
-use std::ops::RangeInclusive;
-use std::str;
+use std::{ops::RangeInclusive, str};
 
 #[tokio::main]
 async fn main() -> Result<(), eyre::Report> {

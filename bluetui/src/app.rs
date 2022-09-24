@@ -7,8 +7,12 @@ use futures::stream::StreamExt;
 use log::{debug, error, info, trace, warn};
 
 use crate::{
-    bluetooth::{agent::Agent, controller::BluetoothController, devices::Devices},
-    ui::ui::{draw_ui, initialize_terminal},
+    bluetooth::{
+        agent::{Agent, AgentCapability},
+        controller::BluetoothController,
+        devices::Devices,
+    },
+    ui::{draw_frame, initialize_terminal},
 };
 
 pub struct App {
@@ -16,8 +20,9 @@ pub struct App {
     bt_controller: BluetoothController,
 }
 
+#[derive(Clone)]
 pub struct AppState {
-    devices: Devices,
+    pub devices: Devices,
     pub hide_unnamed: bool,
 }
 
@@ -57,8 +62,7 @@ impl App {
     pub async fn start(&mut self) {
         tui_logger::init_logger(log::LevelFilter::Info).unwrap();
 
-        // let agent = Agent::new("/chesapeake/agent", "KeyboardDisplay");
-        let agent = Agent::new("/bluetui/agent", "KeyboardDisplay");
+        let agent = Agent::new("/bluetui/agent", AgentCapability::NoInputNoOutput);
         agent.start().await;
         agent.register_and_request_default_agent().await;
 
@@ -215,7 +219,7 @@ impl App {
                 }
             }
 
-            draw_ui(&mut terminal, &app_state_ui, self.bt_controller.scanning).await;
+            draw_frame(&mut terminal, &app_state_ui, self.bt_controller.scanning).await;
             frame_times.push(starting_time.elapsed());
 
             if frame_times.len() % 100 == 1 {

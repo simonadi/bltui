@@ -1,6 +1,8 @@
-use std::convert::TryInto;
-use std::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
-use std::str::FromStr;
+use std::{
+    convert::TryInto,
+    fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex},
+    str::FromStr,
+};
 use thiserror::Error;
 
 /// An error parsing a MAC address from a string.

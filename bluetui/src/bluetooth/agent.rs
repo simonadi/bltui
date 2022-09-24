@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    fmt::{Debug, Display, Formatter},
+    sync::Arc,
+};
 
 use dbus::{
     blocking::BlockingSender,
@@ -11,16 +14,31 @@ use dbus_crossroads::{Crossroads, IfaceBuilder};
 
 use log::info;
 
+#[derive(Debug)]
+pub enum AgentCapability {
+    DisplayOnly,
+    DisplayYesNo,
+    KeyboardDisplay,
+    KeyboardOnly,
+    NoInputNoOutput,
+}
+
+impl Display for AgentCapability {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        Debug::fmt(self, f)
+    }
+}
+
 pub struct Agent<'a> {
     path: dbus::Path<'a>,
-    capability: String,
+    capability: AgentCapability,
 }
 
 impl Agent<'static> {
-    pub fn new(path: &str, capability: &str) -> Agent<'static> {
+    pub fn new(path: &str, capability: AgentCapability) -> Agent<'static> {
         Agent {
             path: dbus::Path::new(path).unwrap(),
-            capability: capability.to_string(),
+            capability: capability,
         }
     }
 
@@ -34,7 +52,7 @@ impl Agent<'static> {
             "RegisterAgent",
         )
         .unwrap()
-        .append2(&self.path, &self.capability);
+        .append2(&self.path, &self.capability.to_string());
         let r = connection
             .send_with_reply_and_block(m, std::time::Duration::from_secs(2))
             .unwrap();
@@ -109,7 +127,7 @@ impl Agent<'static> {
                 "RequestPinCode",
                 ("device",),
                 ("pincode",),
-                |mut ctx, cr, (device,): (dbus::Path,)| {
+                |mut ctx, _cr, (device,): (dbus::Path,)| {
                     info!("Reiceved RequestPinCode command");
                     async move { ctx.reply(Ok(("pincode",))) }
                 },
@@ -119,7 +137,7 @@ impl Agent<'static> {
                 "DisplayPinCode",
                 ("device", "pincode"),
                 (),
-                |mut ctx, cr, (device, pincode): (dbus::Path, String)| {
+                |mut ctx, _cr, (device, pincode): (dbus::Path, String)| {
                     info!("Reiceved DisplayPinCode command");
                     async move { ctx.reply(Ok(())) }
                 },
@@ -129,9 +147,9 @@ impl Agent<'static> {
                 "RequestPasskey",
                 ("device",),
                 ("passkey",),
-                |mut ctx, cr, (device,): (dbus::Path,)| {
+                |mut ctx, _cr, (device,): (dbus::Path,)| {
                     info!("Reiceved RequestPasskey command");
-                    async move { ctx.reply(Ok((1 as u32,))) }
+                    async move { ctx.reply(Ok((1_u32,))) }
                 },
             );
 
@@ -139,7 +157,7 @@ impl Agent<'static> {
                 "DisplayPasskey",
                 ("device", "passkey", "entered"),
                 (),
-                |mut ctx, cr, (device, passkey, entered): (dbus::Path, u32, u16)| {
+                |mut ctx, _cr, (device, passkey, entered): (dbus::Path, u32, u16)| {
                     info!("Reiceved DisplayPasskey command");
                     async move { ctx.reply(Ok(())) }
                 },
@@ -149,7 +167,7 @@ impl Agent<'static> {
                 "RequestConfirmation",
                 ("device", "passkey"),
                 (),
-                |mut ctx, cr, (device, passkey): (dbus::Path, u32)| {
+                |mut ctx, _cr, (device, passkey): (dbus::Path, u32)| {
                     info!("Reiceved RequestConfirmation command");
                     async move { ctx.reply(Ok(())) }
                 },
@@ -159,7 +177,7 @@ impl Agent<'static> {
                 "RequestAuthorization",
                 ("device",),
                 (),
-                |mut ctx, cr, (device,): (dbus::Path,)| {
+                |mut ctx, _cr, (device,): (dbus::Path,)| {
                     info!("Reiceved RequestAuthorization command");
                     async move { ctx.reply(Ok(())) }
                 },
@@ -169,7 +187,7 @@ impl Agent<'static> {
                 "AuthorizeService",
                 ("device", "uuid"),
                 (),
-                |mut ctx, cr, (device, uuid): (dbus::Path, String)| {
+                |mut ctx, _cr, (device, uuid): (dbus::Path, String)| {
                     info!("Reiceved AuthorizeService command");
                     async move { ctx.reply(Ok(())) }
                 },

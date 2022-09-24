@@ -1,8 +1,10 @@
 use bitflags::bitflags;
 use dbus::Path;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
-use std::fmt::{self, Display, Formatter};
+use std::{
+    convert::TryFrom,
+    fmt::{self, Display, Formatter},
+};
 use uuid::Uuid;
 
 use crate::{BluetoothError, ServiceId};

@@ -2,16 +2,20 @@ use bluez_generated::{
     OrgBluezAdapter1Properties, OrgBluezDevice1Properties, OrgBluezGattCharacteristic1Properties,
     ORG_BLUEZ_ADAPTER1_NAME, ORG_BLUEZ_DEVICE1_NAME, ORG_BLUEZ_GATT_CHARACTERISTIC1_NAME,
 };
-use dbus::message::{MatchRule, SignalArgs};
-use dbus::nonblock::stdintf::org_freedesktop_dbus::{
-    ObjectManagerInterfacesAdded, PropertiesPropertiesChanged,
+use dbus::{
+    message::{MatchRule, SignalArgs},
+    nonblock::stdintf::org_freedesktop_dbus::{
+        ObjectManagerInterfacesAdded, PropertiesPropertiesChanged,
+    },
+    Message, Path,
 };
-use dbus::{Message, Path};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use super::device::{convert_manufacturer_data, convert_service_data, convert_services};
-use super::{AdapterId, CharacteristicId, DeviceId};
+use super::{
+    device::{convert_manufacturer_data, convert_service_data, convert_services},
+    AdapterId, CharacteristicId, DeviceId,
+};
 
 const TEMP_CONST: &str = "org.bluez.Agent.RequestConfirmation";
 

@@ -1,7 +1,9 @@
-use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-use std::fmt::{self, Display, Formatter};
-use std::str::FromStr;
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 use thiserror::Error;
 
 /// An error parsing a [`Modalias`] from a string.

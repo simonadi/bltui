@@ -1,10 +1,13 @@
-use dbus::nonblock::{MsgMatch, SyncConnection};
-use dbus::Message;
-use futures::channel::mpsc::UnboundedReceiver;
-use futures::Stream;
-use std::pin::Pin;
-use std::sync::Arc;
-use std::task::{Context, Poll};
+use dbus::{
+    nonblock::{MsgMatch, SyncConnection},
+    Message,
+};
+use futures::{channel::mpsc::UnboundedReceiver, Stream};
+use std::{
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
+};
 
 /// Wrapper for a stream of D-Bus messages which automatically removes the `MsgMatch` from the D-Bus
 /// connection when it is dropped.

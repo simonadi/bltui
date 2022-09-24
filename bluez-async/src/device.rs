@@ -1,10 +1,14 @@
 use bluez_generated::OrgBluezDevice1Properties;
-use dbus::arg::{cast, PropMap, RefArg, Variant};
-use dbus::Path;
+use dbus::{
+    arg::{cast, PropMap, RefArg, Variant},
+    Path,
+};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fmt::{self, Display, Formatter};
-use std::str::FromStr;
+use std::{
+    collections::HashMap,
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 use uuid::Uuid;
 
 use crate::{AdapterId, BluetoothError, MacAddress};

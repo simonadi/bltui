@@ -86,7 +86,7 @@ impl Devices {
         }
     }
 
-    pub fn list_items(&self) -> Vec<ListItem> {
+    pub fn list_items<'a>(&self) -> Vec<ListItem<'a>> {
         self.devices
             .clone()
             .into_iter()
@@ -99,6 +99,10 @@ impl Devices {
         self.list_state
             .selected()
             .map(|index| self.devices[index].clone())
+    }
+
+    pub fn len(&self) -> usize {
+        self.devices.len()
     }
 }
 

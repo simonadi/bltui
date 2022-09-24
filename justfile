@@ -15,6 +15,11 @@ install:
     makepkg -g >> PKGBUILD
     makepkg -si
 
+fmt:
+    cargo +nightly fmt
+
+run:
+    cargo run --release
 
 clean:
     cargo clean
@@ -27,8 +32,8 @@ clean:
 
 check:
     #!/bin/sh
-    cargo check
+    cargo check -p bluetui
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-    cargo clippy
+    cargo clippy -p bluetui
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
     cargo fmt

@@ -3,8 +3,7 @@ use dbus::Path;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 
-use crate::Modalias;
-use crate::{AddressType, BluetoothError, MacAddress};
+use crate::{AddressType, BluetoothError, MacAddress, Modalias};
 
 /// Opaque identifier for a Bluetooth adapter on the system.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]

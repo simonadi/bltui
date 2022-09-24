@@ -20,38 +20,46 @@ mod modalias;
 mod serde_path;
 mod service;
 
-pub use self::adapter::{AdapterId, AdapterInfo};
-pub use self::bleuuid::{uuid_from_u16, uuid_from_u32, BleUuid};
-pub use self::characteristic::{CharacteristicFlags, CharacteristicId, CharacteristicInfo};
-pub use self::descriptor::{DescriptorId, DescriptorInfo};
-pub use self::device::{AddressType, DeviceId, DeviceInfo};
-pub use self::events::{AdapterEvent, BluetoothEvent, CharacteristicEvent, DeviceEvent};
-use self::introspect::IntrospectParse;
-pub use self::macaddress::{MacAddress, ParseMacAddressError};
-use self::messagestream::MessageStream;
-pub use self::modalias::{Modalias, ParseModaliasError};
-pub use self::service::{ServiceId, ServiceInfo};
+pub use self::{
+    adapter::{AdapterId, AdapterInfo},
+    bleuuid::{uuid_from_u16, uuid_from_u32, BleUuid},
+    characteristic::{CharacteristicFlags, CharacteristicId, CharacteristicInfo},
+    descriptor::{DescriptorId, DescriptorInfo},
+    device::{AddressType, DeviceId, DeviceInfo},
+    events::{AdapterEvent, BluetoothEvent, CharacteristicEvent, DeviceEvent},
+    macaddress::{MacAddress, ParseMacAddressError},
+    modalias::{Modalias, ParseModaliasError},
+    service::{ServiceId, ServiceInfo},
+};
+use self::{introspect::IntrospectParse, messagestream::MessageStream};
 use bluez_generated::{
     OrgBluezAdapter1, OrgBluezAdapter1Properties, OrgBluezDevice1, OrgBluezDevice1Properties,
     OrgBluezGattCharacteristic1, OrgBluezGattDescriptor1, OrgBluezGattService1,
     ORG_BLUEZ_ADAPTER1_NAME, ORG_BLUEZ_DEVICE1_NAME,
 };
-use dbus::arg::{PropMap, Variant};
-use dbus::nonblock::stdintf::org_freedesktop_dbus::{Introspectable, ObjectManager, Properties};
-use dbus::nonblock::{Proxy, SyncConnection};
-use dbus::Path;
+use dbus::{
+    arg::{PropMap, Variant},
+    nonblock::{
+        stdintf::org_freedesktop_dbus::{Introspectable, ObjectManager, Properties},
+        Proxy, SyncConnection,
+    },
+    Path,
+};
 use dbus_tokio::connection::IOResourceError;
-use futures::stream::{self, select_all, StreamExt};
-use futures::{FutureExt, Stream};
-use std::collections::HashMap;
-use std::convert::TryInto;
-use std::fmt::{self, Debug, Display, Formatter};
-use std::future::Future;
-use std::sync::Arc;
-use std::time::Duration;
+use futures::{
+    stream::{self, select_all, StreamExt},
+    FutureExt, Stream,
+};
+use std::{
+    collections::HashMap,
+    convert::TryInto,
+    fmt::{self, Debug, Display, Formatter},
+    future::Future,
+    sync::Arc,
+    time::Duration,
+};
 use thiserror::Error;
-use tokio::task::JoinError;
-use tokio::time::timeout;
+use tokio::{task::JoinError, time::timeout};
 use uuid::Uuid;
 
 const DBUS_METHOD_CALL_TIMEOUT: Duration = Duration::from_secs(30);
