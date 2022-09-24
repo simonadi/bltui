@@ -15,7 +15,6 @@ use self::widgets::{
     statics::{commands, title},
 };
 
-
 pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
     let stdout = std::io::stdout();
     enable_raw_mode().unwrap();

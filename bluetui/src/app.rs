@@ -14,6 +14,7 @@ use crate::{
     },
     ui::{draw_frame, initialize_terminal},
 };
+use dirs::home_dir;
 
 pub struct App {
     state: std::sync::Arc<tokio::sync::Mutex<AppState>>,
@@ -24,13 +25,15 @@ pub struct App {
 struct AppSettings {
     log_level: log::LevelFilter,
     show_unknown: bool,
+    log_to_file: bool,
 }
 
 impl AppSettings {
-    pub fn new(log_level: log::LevelFilter, show_unknown: bool) -> AppSettings {
+    pub fn new(log_level: log::LevelFilter, show_unknown: bool, log_to_file: bool) -> AppSettings {
         AppSettings {
             log_level,
             show_unknown,
+            log_to_file,
         }
     }
 }
@@ -60,7 +63,11 @@ impl Default for AppState {
 }
 
 impl App {
-    pub async fn new(logging_level: log::LevelFilter, show_unknown: bool) -> App {
+    pub async fn new(
+        logging_level: log::LevelFilter,
+        show_unknown: bool,
+        log_to_file: bool,
+    ) -> App {
         info!("Initializing the app");
 
         let app_state = std::sync::Arc::new(tokio::sync::Mutex::new(AppState::new()));
@@ -69,7 +76,7 @@ impl App {
         App {
             state: app_state,
             bt_controller,
-            settings: AppSettings::new(logging_level, show_unknown),
+            settings: AppSettings::new(logging_level, show_unknown, log_to_file),
         }
     }
 
@@ -129,7 +136,17 @@ impl App {
         tui_logger::init_logger(self.settings.log_level).unwrap();
         tui_logger::set_default_level(self.settings.log_level);
 
-        let agent = Agent::new("/bluetui/agent", AgentCapability::NoInputNoOutput);
+        if self.settings.log_to_file {
+            let timestamp = chrono::Utc::now();
+            let mut logs_dir = home_dir().unwrap();
+            logs_dir.push(".bluetui");
+            logs_dir.push("logs");
+            std::fs::create_dir_all(&logs_dir).expect("Could not create log directory");
+            tui_logger::set_log_file(&format!("{}/{}.log", logs_dir.to_str().unwrap(), timestamp))
+                .unwrap();
+        }
+
+        let agent = Agent::new("/bluetui/agent", AgentCapability::KeyboardDisplay);
         agent.start().await;
         agent.register_and_request_default_agent().await;
 
@@ -243,7 +260,7 @@ impl App {
 
             draw_frame(&mut terminal, &app_state_ui, self.bt_controller.scanning).await;
         }
-        info!("Quitting");
+        debug!("Quitting");
         disable_raw_mode().unwrap();
         terminal.clear().unwrap();
     }

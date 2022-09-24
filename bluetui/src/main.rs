@@ -12,6 +12,10 @@ struct CliArgs {
     /// Display devices with an unknown name
     #[clap(short = 'u', long, action)]
     show_unknown: bool,
+
+    /// Log to file (/$homedir/.bluetui/logs)
+    #[clap(short, long, action)]
+    log_to_file: bool,
 }
 
 #[tokio::main]
@@ -25,20 +29,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => log::LevelFilter::Trace,
     };
 
-    let mut app = App::new(logging_level, cli.show_unknown).await;
+    let mut app = App::new(logging_level, cli.show_unknown, cli.log_to_file).await;
 
     app.start().await;
 
     Ok(())
     // return Ok(());
-
-    // let timestamp = chrono::Utc::now();
-    // let log_dir = format!("logs/{}", timestamp.date());
-    // std::fs::create_dir_all(&log_dir).expect("Could not create log directory");
-
-    // simple_logging::log_to_file(
-    //     format!("{}/{}.log", &log_dir, timestamp),
-    //     log::LevelFilter::Debug,
-    // )
-    // .expect("Could not create log file");
 }

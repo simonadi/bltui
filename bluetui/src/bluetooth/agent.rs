@@ -1,13 +1,16 @@
 use std::{
     fmt::{Debug, Display, Formatter},
     sync::Arc,
+    time::Duration,
 };
 
 use dbus::{
     blocking::BlockingSender,
     channel::MatchingReceiver,
     message::MatchRule,
-    nonblock::{stdintf::org_freedesktop_dbus::RequestNameReply, SyncConnection},
+    nonblock::{
+        stdintf::org_freedesktop_dbus::RequestNameReply, NonblockReply, Proxy, SyncConnection,
+    },
     Message,
 };
 use dbus_crossroads::{Crossroads, IfaceBuilder};
@@ -32,45 +35,53 @@ impl Display for AgentCapability {
 pub struct Agent<'a> {
     path: dbus::Path<'a>,
     capability: AgentCapability,
+    connection: Arc<dbus::nonblock::SyncConnection>,
 }
 
 impl Agent<'static> {
     pub fn new(path: &str, capability: AgentCapability) -> Agent<'static> {
+        let (resource, connection) = dbus_tokio::connection::new_system_sync().unwrap();
+
+        let _handle = tokio::spawn(async {
+            let err = resource.await;
+            panic!("Lost connection to D-Bus: {}", err);
+        });
+
         Agent {
             path: dbus::Path::new(path).unwrap(),
             capability: capability,
+            connection,
         }
     }
 
     pub async fn register_and_request_default_agent(&self) {
-        let connection = dbus::blocking::Connection::new_system().unwrap();
+        // let connection = dbus::blocking::Connection::new_system().unwrap();
+        let connection = std::sync::Arc::clone(&self.connection);
 
-        let m = Message::new_method_call(
+        let proxy = Proxy::new(
             "org.bluez",
             "/org/bluez",
-            "org.bluez.AgentManager1",
-            "RegisterAgent",
-        )
-        .unwrap()
-        .append2(&self.path, &self.capability.to_string());
-        let r = connection
-            .send_with_reply_and_block(m, std::time::Duration::from_secs(2))
+            Duration::from_secs(2),
+            connection,
+        );
+        let (): () = proxy
+            .method_call(
+                "org.bluez.AgentManager1",
+                "RegisterAgent",
+                (&self.path, &self.capability.to_string()),
+            )
+            .await
             .unwrap();
-
-        info!("message : {:?}", r);
 
         info!("Registered the agent");
 
-        let m = Message::new_method_call(
-            "org.bluez",
-            "/org/bluez",
-            "org.bluez.AgentManager1",
-            "RequestDefaultAgent",
-        )
-        .unwrap()
-        .append1(&self.path);
-        let r = connection
-            .send_with_reply_and_block(m, std::time::Duration::from_secs(2))
+        let (): () = proxy
+            .method_call(
+                "org.bluez.AgentManager1",
+                "RequestDefaultAgent",
+                (&self.path,),
+            )
+            .await
             .unwrap();
 
         info!("Agent is now the default agent");
@@ -98,14 +109,10 @@ impl Agent<'static> {
     }
 
     pub async fn start(&self) {
-        let (resource, c) = dbus_tokio::connection::new_system_sync().unwrap();
+        let c = std::sync::Arc::clone(&self.connection);
 
         // Spawn a task that polls the Dbus to check that the connection is still alive.
         // Panics when it's lost
-        let _handle = tokio::spawn(async {
-            let err = resource.await;
-            panic!("Lost connection to D-Bus: {}", err);
-        });
 
         // self.request_name(&c).await.unwrap();
 
