@@ -1,11 +1,12 @@
-use btleplug::api::CentralEvent;
-use btleplug::api::{Central, Manager as _, Peripheral as _, ScanFilter};
-use btleplug::platform::{Adapter, Manager, Peripheral, PeripheralId};
+use btleplug::{
+    api::{Central, CentralEvent, Manager as _, Peripheral as _, ScanFilter},
+    platform::{Adapter, Manager, Peripheral, PeripheralId},
+};
 use futures::Stream;
 use log::info;
 use std::pin::Pin;
 
-use crate::devices::Device;
+use crate::bluetooth::devices::Device;
 
 #[derive(Clone)]
 pub struct BluetoothController {

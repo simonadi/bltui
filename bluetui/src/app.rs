@@ -1,13 +1,15 @@
 use btleplug::api::CentralEvent;
-use crossterm::event::{Event, KeyCode};
-use crossterm::terminal::disable_raw_mode;
+use crossterm::{
+    event::{Event, KeyCode},
+    terminal::disable_raw_mode,
+};
 use futures::stream::StreamExt;
 use log::{debug, error, info, trace, warn};
 
-use crate::agent::Agent;
-use crate::bluetooth::BluetoothController;
-use crate::devices::Devices;
-use crate::ui::ui::{draw_ui, initialize_terminal};
+use crate::{
+    bluetooth::{agent::Agent, controller::BluetoothController, devices::Devices},
+    ui::ui::{draw_ui, initialize_terminal},
+};
 
 pub struct App {
     state: std::sync::Arc<tokio::sync::Mutex<AppState>>,

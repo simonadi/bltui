@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
-use dbus::channel::MatchingReceiver;
-use dbus::message::MatchRule;
-use dbus::nonblock::stdintf::org_freedesktop_dbus::RequestNameReply;
-use dbus::Message;
-use dbus::{blocking::BlockingSender, nonblock::SyncConnection};
+use dbus::{
+    blocking::BlockingSender,
+    channel::MatchingReceiver,
+    message::MatchRule,
+    nonblock::{stdintf::org_freedesktop_dbus::RequestNameReply, SyncConnection},
+    Message,
+};
 use dbus_crossroads::{Crossroads, IfaceBuilder};
 
 use log::info;

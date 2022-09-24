@@ -1,4 +1,4 @@
-use crate::{app::AppState, devices::Device};
+use crate::{app::AppState, bluetooth::devices::Device};
 use crossterm::terminal::enable_raw_mode;
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -189,38 +189,6 @@ pub async fn draw_ui<B: Backend>(
             rect.render_stateful_widget(list, main_chunks[0], &mut state.devices().list_state);
             rect.render_widget(logger, right_chunks[1]);
             rect.render_widget(device_details, right_chunks[0]);
-
-            // if false {
-            //     let popup = QuestionPopup::new(
-            //         String::from("Confirm pairing"),
-            //         vec![
-            //             QuestionPopupItem::unstyled(String::from("Yes")),
-            //             QuestionPopupItem::unstyled(String::from("No")),
-            //         ],
-            //     )
-            //     .style(Style::default().bg(Color::Blue))
-            //     .highlight_style(Style::default().bg(Color::White));
-
-            //     let vertical_chunks = Layout::default()
-            //         .direction(Direction::Vertical)
-            //         .constraints([
-            //             Constraint::Percentage(45),
-            //             Constraint::Length(4),
-            //             Constraint::Percentage(45),
-            //         ])
-            //         .split(size);
-
-            //     let popup_chunk = Layout::default()
-            //         .direction(Direction::Horizontal)
-            //         .constraints([
-            //             Constraint::Percentage(20),
-            //             Constraint::Percentage(60),
-            //             Constraint::Percentage(20),
-            //         ])
-            //         .split(vertical_chunks[1])[1];
-
-            //     rect.render_stateful_widget(popup, popup_chunk, &mut QuestionPopupState::default());
-            // }
         })
         .unwrap();
 }
