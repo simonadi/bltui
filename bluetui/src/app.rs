@@ -4,7 +4,7 @@ use crossterm::{
     terminal::disable_raw_mode,
 };
 use futures::stream::StreamExt;
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info, trace};
 
 use crate::{
     bluetooth::{
