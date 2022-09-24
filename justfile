@@ -25,6 +25,9 @@ fmt:
 run *ARGS:
     cargo run --release -- {{ ARGS }}
 
+run-debug:
+    cargo run -- -dd -l
+
 clean:
     #cargo clean
     rm -rf logs

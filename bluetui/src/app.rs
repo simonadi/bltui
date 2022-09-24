@@ -146,7 +146,7 @@ impl App {
                 .unwrap();
         }
 
-        let agent = Agent::new("/bluetui/agent", AgentCapability::KeyboardDisplay);
+        let agent = Agent::new("/bluetui/agent", AgentCapability::DisplayOnly);
         agent.start().await;
         agent.register_and_request_default_agent().await;
 

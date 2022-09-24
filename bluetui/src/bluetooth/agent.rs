@@ -15,7 +15,7 @@ use dbus::{
 };
 use dbus_crossroads::{Crossroads, IfaceBuilder};
 
-use log::info;
+use log::{debug, info};
 
 #[derive(Debug)]
 pub enum AgentCapability {
@@ -55,7 +55,6 @@ impl Agent<'static> {
     }
 
     pub async fn register_and_request_default_agent(&self) {
-        // let connection = dbus::blocking::Connection::new_system().unwrap();
         let connection = std::sync::Arc::clone(&self.connection);
 
         let proxy = Proxy::new(
@@ -175,7 +174,7 @@ impl Agent<'static> {
                 ("device", "passkey"),
                 (),
                 |mut ctx, _cr, (device, passkey): (dbus::Path, u32)| {
-                    info!("Reiceved RequestConfirmation command");
+                    debug!("Received RequestConfirmation command for device {} with passkey {}", device, passkey);
                     async move { ctx.reply(Ok(())) }
                 },
             );
