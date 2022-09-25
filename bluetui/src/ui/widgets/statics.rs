@@ -7,6 +7,7 @@ use tui::{
 
 pub fn blue_box(title: Option<String>) -> Block<'static> {
     let block = Block::default()
+        .style(Style::default().fg(Color::Black))
         .borders(Borders::all())
         .border_style(Style::default().fg(Color::Blue));
 
@@ -17,8 +18,9 @@ pub fn blue_box(title: Option<String>) -> Block<'static> {
     }
 }
 
-pub fn commands<'a>(scanning: bool) -> Paragraph<'a> {
+pub fn main_commands<'a>(scanning: bool) -> Paragraph<'a> {
     Paragraph::new(Spans::from(vec![
+        Span::raw("⇵: move through devices   "),
         Span::raw(format!(
             "s: {}   ",
             if scanning {
@@ -30,6 +32,14 @@ pub fn commands<'a>(scanning: bool) -> Paragraph<'a> {
         Span::raw("c: connect   "),
         Span::raw("d: disconnect   "),
         Span::raw("q: quit"),
+    ]))
+    .block(blue_box(None))
+}
+
+pub fn popup_commands<'a>() -> Paragraph<'a> {
+    Paragraph::new(Spans::from(vec![
+        Span::raw("⇵: move   "),
+        Span::raw("↲: confirm")
     ]))
     .block(blue_box(None))
 }

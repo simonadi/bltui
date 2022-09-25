@@ -3,17 +3,22 @@ use crossterm::terminal::enable_raw_mode;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    widgets::ListItem,
     Terminal,
 };
 
-mod widgets;
 pub mod popup;
+pub mod widgets;
 
-use self::widgets::{
-    device_details::get_device_details,
-    devices::devices_list,
-    logger::get_logger_widget,
-    statics::{commands, title},
+use self::{
+    popup::{QuestionPopup, QuestionPopupItem, QuestionPopupState},
+    widgets::{
+        device_details::get_device_details,
+        devices::devices_list,
+        logger::get_logger_widget,
+        statics::{blue_box, main_commands, popup_commands, title},
+    },
 };
 
 pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
@@ -25,9 +30,9 @@ pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
     terminal
 }
 
-pub async fn draw_frame<B: Backend>(
+pub async fn draw_frame<'a, B: Backend>(
     terminal: &mut Terminal<B>,
-    state: &std::sync::Arc<tokio::sync::Mutex<AppState>>,
+    state: &std::sync::Arc<tokio::sync::Mutex<AppState<'_>>>,
     scanning: bool,
 ) {
     let state = state.lock().await;
@@ -58,7 +63,6 @@ pub async fn draw_frame<B: Backend>(
                 .split(main_chunks[1]);
 
             rect.render_widget(title(), chunks[0]);
-            rect.render_widget(commands(scanning), chunks[2]);
             rect.render_stateful_widget(
                 devices_list(&state.devices),
                 main_chunks[0],
@@ -66,6 +70,33 @@ pub async fn draw_frame<B: Backend>(
             );
             rect.render_widget(get_logger_widget(), right_chunks[1]);
             rect.render_widget(get_device_details(selected_device), right_chunks[0]);
+
+            
+
+            if let Some(popup) = &state.popup {
+                rect.render_widget(popup_commands(), chunks[2]);
+                let vertical_chunks = Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([
+                        Constraint::Percentage(45),
+                        Constraint::Length(6),
+                        Constraint::Percentage(45),
+                    ])
+                    .split(size);
+
+                let popup_chunk = Layout::default()
+                    .direction(Direction::Horizontal)
+                    .constraints([
+                        Constraint::Percentage(20),
+                        Constraint::Percentage(60),
+                        Constraint::Percentage(20),
+                    ])
+                    .split(vertical_chunks[1])[1];
+
+                rect.render_widget(popup.clone(), popup_chunk);
+            } else {
+                rect.render_widget(main_commands(scanning), chunks[2]);
+            }
         })
         .unwrap();
 }

@@ -1,6 +1,17 @@
-use tui::{buffer::Buffer, layout::Rect, style::Style, widgets::{StatefulWidget, Widget}};
+use std::cmp::min;
 
-use super::widgets::statics::blue_box;
+use crossterm::event::KeyCode;
+use tui::{
+    buffer::Buffer,
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    style::{Color, Style},
+    widgets::{Block, List, ListItem, ListState, Paragraph, StatefulWidget, Widget},
+};
+
+trait Popup {
+    fn validate(&self);
+    fn handle_keypress(&mut self, keycode: KeyCode);
+}
 
 enum QuestionPopupType {
     YesNo,
@@ -41,92 +52,134 @@ impl QuestionPopupItem {
     // }
 }
 
-pub struct QuestionPopup {
+#[derive(Clone)]
+pub struct QuestionPopup<'a> {
     question: String,
-    items: Vec<QuestionPopupItem>,
-    style: Style,
-    highlight_style: Style,
+    options: Vec<ListItem<'a>>,
+    state: ListState,
+    block: Option<Block<'a>>,
 }
 
-impl QuestionPopup {
-    pub fn new<T>(question: String, items: T) -> QuestionPopup
+impl<'a> QuestionPopup<'a> {
+    pub fn new<T>(question: String, options: T) -> QuestionPopup<'a>
     where
-        T: Into<Vec<QuestionPopupItem>>,
+        T: Into<Vec<ListItem<'a>>>,
         // U: Into<Text<'a>>,
     {
         QuestionPopup {
             question,
-            items: items.into(),
-            style: Style::default(),
-            highlight_style: Style::default(),
+            options: options.into(),
+            state: ListState::default(),
+            block: None,
         }
     }
 
-    pub fn style(mut self, style: Style) -> QuestionPopup {
-        self.style = style;
+    pub fn block(mut self, block: Block<'a>) -> QuestionPopup<'a> {
+        self.block = Some(block);
         self
     }
 
-    pub fn highlight_style(mut self, style: Style) -> QuestionPopup {
-        self.highlight_style = style;
-        self
+    pub fn move_selector_down(&mut self) {
+        let current_index = self.state.selected();
+
+        if let Some(index) = current_index {
+            self.state
+                .select(Some(min(index + 1, self.options.len() - 1)));
+        } else if !self.options.is_empty() {
+            self.state.select(Some(0));
+        }
+    }
+
+    pub fn move_selector_up(&mut self) {
+        let current_index = self.state.selected();
+
+        if let Some(index) = current_index {
+            self.state.select(Some(index.saturating_sub(1)));
+        } else if !self.options.is_empty() {
+            self.state.select(Some(0));
+        }
     }
 }
 
-impl<'a> StatefulWidget for QuestionPopup {
-    type State = QuestionPopupState;
+// impl<'a> StatefulWidget for QuestionPopup<'a> {
+impl<'a> Widget for QuestionPopup<'a> {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
+        for x in area.left()..area.right() {
+            for y in area.top()..area.bottom() {
+                buf.get_mut(x, y).reset();
+            }
+        }
 
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        blue_box(Some("Confirm".to_string())).render(area, buf);
-    //     for x in area.left()..area.right() {
-    //         for y in area.top()..area.bottom() {
-    //             buf.get_mut(x, y).reset();
-    //         }
-    //     }
+        let question_area = match self.block.take() {
+            Some(b) => {
+                let inner_area = b.inner(area);
+                b.render(area, buf);
+                inner_area
+            }
+            None => area,
+        };
 
-    //     buf.set_style(area, self.style);
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Percentage(30), Constraint::Percentage(70)])
+            .split(question_area);
 
-    //     // let question_width = self.question.chars().map(|chara| StyledGrapheme { symbol: &String::from(chara), style: self.style });
-    //     let question_width = self.question.len();
-    //     let answers_width = self
-    //         .items
-    //         .clone()
-    //         .into_iter()
-    //         .map(|item| item.content.len())
-    //         .sum::<usize>();
+        Paragraph::new(self.question)
+            .alignment(Alignment::Center)
+            .render(chunks[0], buf);
 
-    //     // info!("width : {}", question_width);
+        StatefulWidget::render(
+            List::new(self.options)
+                .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
+                .highlight_symbol("->"),
+            chunks[1],
+            buf,
+            &mut self.state,
+        );
 
-    //     let center_x = area.left() + (area.right() - area.left()) / 2;
-    //     let start_question = center_x - (question_width as u16 / 2);
-    //     let answers_offset =
-    //         ((area.right() - area.left()) - answers_width as u16) / (self.items.len() + 1) as u16;
+        //     buf.set_style(area, self.style);
 
-    //     buf.set_stringn(
-    //         start_question,
-    //         area.top(),
-    //         self.question,
-    //         question_width,
-    //         Style::default(),
-    //     );
+        //     // let question_width = self.question.chars().map(|chara| StyledGrapheme { symbol: &String::from(chara), style: self.style });
+        //     let question_width = self.question.len();
+        //     let answers_width = self
+        //         .items
+        //         .clone()
+        //         .into_iter()
+        //         .map(|item| item.content.len())
+        //         .sum::<usize>();
 
-    //     let mut cursor = area.left() + answers_offset;
-    //     let selected = state.selected();
+        //     // info!("width : {}", question_width);
 
-    //     for (i, answer) in self.items.iter().enumerate() {
-    //         buf.set_stringn(
-    //             cursor,
-    //             area.bottom() - 2,
-    //             &answer.content,
-    //             100,
-    //             if i == selected {
-    //                 self.highlight_style
-    //             } else {
-    //                 self.style
-    //             },
-    //         );
+        //     let center_x = area.left() + (area.right() - area.left()) / 2;
+        //     let start_question = center_x - (question_width as u16 / 2);
+        //     let answers_offset =
+        //         ((area.right() - area.left()) - answers_width as u16) / (self.items.len() + 1) as u16;
 
-    //         cursor += answer.content.len() as u16 + answers_offset;
-    //     }
+        //     buf.set_stringn(
+        //         start_question,
+        //         area.top(),
+        //         self.question,
+        //         question_width,
+        //         Style::default(),
+        //     );
+
+        //     let mut cursor = area.left() + answers_offset;
+        //     let selected = state.selected();
+
+        //     for (i, answer) in self.items.iter().enumerate() {
+        //         buf.set_stringn(
+        //             cursor,
+        //             area.bottom() - 2,
+        //             &answer.content,
+        //             100,
+        //             if i == selected {
+        //                 self.highlight_style
+        //             } else {
+        //                 self.style
+        //             },
+        //         );
+
+        //         cursor += answer.content.len() as u16 + answers_offset;
+        //     }
     }
 }

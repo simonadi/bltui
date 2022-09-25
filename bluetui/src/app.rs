@@ -5,19 +5,21 @@ use crossterm::{
 };
 use futures::stream::StreamExt;
 use log::{debug, error, info, trace};
+use tui::widgets::{List, ListItem};
 
 use crate::{
+    app,
     bluetooth::{
         agent::{Agent, AgentCapability},
         controller::BluetoothController,
         devices::Devices,
     },
-    ui::{draw_frame, initialize_terminal},
+    ui::{draw_frame, initialize_terminal, popup::QuestionPopup, widgets::statics::blue_box},
 };
 use dirs::home_dir;
 
-pub struct App {
-    state: std::sync::Arc<tokio::sync::Mutex<AppState>>,
+pub struct App<'a> {
+    state: std::sync::Arc<tokio::sync::Mutex<AppState<'a>>>,
     bt_controller: BluetoothController,
     settings: AppSettings,
 }
@@ -39,14 +41,16 @@ impl AppSettings {
 }
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct AppState<'a> {
     pub devices: Devices,
+    pub popup: Option<QuestionPopup<'a>>,
 }
 
-impl AppState {
-    pub fn new() -> AppState {
+impl<'a> AppState<'a> {
+    pub fn new() -> AppState<'a> {
         AppState {
             devices: Devices::new(),
+            popup: None,
             // popup: Option<QuestionPopupState>,
         }
     }
@@ -56,18 +60,18 @@ impl AppState {
     }
 }
 
-impl Default for AppState {
-    fn default() -> AppState {
+impl<'a> Default for AppState<'a> {
+    fn default() -> AppState<'a> {
         Self::new()
     }
 }
 
-impl App {
+impl App<'static> {
     pub async fn new(
         logging_level: log::LevelFilter,
         show_unknown: bool,
         log_to_file: bool,
-    ) -> App {
+    ) -> App<'static> {
         info!("Initializing the app");
 
         let app_state = std::sync::Arc::new(tokio::sync::Mutex::new(AppState::new()));
@@ -160,67 +164,108 @@ impl App {
         loop {
             if crossterm::event::poll(tick_rate).unwrap() {
                 if let Event::Key(key) = crossterm::event::read().unwrap() {
-                    match key.code {
-                        KeyCode::Char('q') => {
-                            // Quit
-                            break;
+                    let some_popup = {
+                        let state = app_state_ui.lock().await;
+                        state.popup.is_some()
+                    };
+
+                    if some_popup {
+                        match key.code {
+                            KeyCode::Down => {
+                                let mut state = app_state_ui.lock().await;
+                                let popup = state.popup.as_mut().unwrap();
+                                popup.move_selector_down();
+                            }
+                            KeyCode::Up => {
+                                let mut state = app_state_ui.lock().await;
+                                let popup = state.popup.as_mut().unwrap();
+                                popup.move_selector_up();
+                            }
+                            KeyCode::Enter => {
+                                let mut state = app_state_ui.lock().await;
+                                state.popup = None;
+                            }
+                            _ => {}
                         }
-                        KeyCode::Char('d') => {
-                            // Disconnect from the device
-                            let device_opt = {
-                                let state = app_state_ui.lock().await;
-                                state.devices.get_selected_device().await
-                            };
-                            if let Some(device) = device_opt {
-                                info!(
-                                    "Trying to disconnect from {} ({})",
-                                    device.name, device.address
-                                );
-                                if self
-                                    .bt_controller
-                                    .disconnect(&device.periph_id)
-                                    .await
-                                    .is_err()
-                                {
-                                    error!("Failed to disconnect");
+                    } else {
+                        match key.code {
+                            KeyCode::Char('q') => {
+                                // Quit
+                                break;
+                            }
+                            KeyCode::Char('1') => {
+                                info!("11111111111111");
+                            }
+                            KeyCode::Char('d') => {
+                                // Disconnect from the device
+                                let device_opt = {
+                                    let state = app_state_ui.lock().await;
+                                    state.devices.get_selected_device().await
+                                };
+                                if let Some(device) = device_opt {
+                                    info!(
+                                        "Trying to disconnect from {} ({})",
+                                        device.name, device.address
+                                    );
+                                    if self
+                                        .bt_controller
+                                        .disconnect(&device.periph_id)
+                                        .await
+                                        .is_err()
+                                    {
+                                        error!("Failed to disconnect");
+                                    }
                                 }
                             }
-                        }
-                        KeyCode::Char('c') => {
-                            // Connect to the device
-                            let device_opt = {
-                                let state = app_state_ui.lock().await;
-                                state.devices.get_selected_device().await
-                            };
-                            if let Some(device) = device_opt {
-                                info!("Trying to connect to {} ({})", device.name, device.address);
-                                let bt_controller_temp = self.bt_controller.clone();
-                                tokio::spawn(async move {
-                                    if bt_controller_temp.connect(&device.periph_id).await.is_err()
-                                    {
-                                        error!("Failed to connect");
-                                    }
-                                });
+                            KeyCode::Char('c') => {
+                                // Connect to the device
+                                let device_opt = {
+                                    let state = app_state_ui.lock().await;
+                                    state.devices.get_selected_device().await
+                                };
+                                if let Some(device) = device_opt {
+                                    info!(
+                                        "Trying to connect to {} ({})",
+                                        device.name, device.address
+                                    );
+                                    let bt_controller_temp = self.bt_controller.clone();
+                                    tokio::spawn(async move {
+                                        if bt_controller_temp
+                                            .connect(&device.periph_id)
+                                            .await
+                                            .is_err()
+                                        {
+                                            error!("Failed to connect");
+                                        }
+                                    });
+                                }
                             }
-                        }
-                        KeyCode::Char('s') => {
-                            // Trigger scan
-                            if self.bt_controller.trigger_scan().await.is_err() {
-                                error!("Failed to switch scan");
+                            KeyCode::Char('s') => {
+                                // Trigger scan
+                                if self.bt_controller.trigger_scan().await.is_err() {
+                                    error!("Failed to switch scan");
+                                }
                             }
+                            KeyCode::Down => {
+                                let mut state = app_state_ui.lock().await;
+                                state.devices.move_selector_down();
+                            }
+                            KeyCode::Up => {
+                                let mut state = app_state_ui.lock().await;
+                                state.devices.move_selector_up();
+                            }
+                            KeyCode::Right => {
+                                let mut state = app_state_ui.lock().await;
+                                state.popup = Some(
+                                    QuestionPopup::new(
+                                        "Confirm pairing ?".to_string(),
+                                        vec![ListItem::new("Yes"), ListItem::new("No")],
+                                    )
+                                    .block(blue_box(None)),
+                                );
+                            }
+                            _ => {}
                         }
-                        KeyCode::Down => {
-                            let mut state = app_state_ui.lock().await;
-                            state.devices.move_selector_down();
-                        }
-                        KeyCode::Up => {
-                            let mut state = app_state_ui.lock().await;
-                            state.devices.move_selector_up();
-                        }
-                        KeyCode::Right => {}
-                        KeyCode::Left => {}
-                        KeyCode::Enter => {}
-                        _ => {}
                     }
                 }
             }

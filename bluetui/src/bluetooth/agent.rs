@@ -174,7 +174,10 @@ impl Agent<'static> {
                 ("device", "passkey"),
                 (),
                 |mut ctx, _cr, (device, passkey): (dbus::Path, u32)| {
-                    debug!("Received RequestConfirmation command for device {} with passkey {}", device, passkey);
+                    debug!(
+                        "Received RequestConfirmation command for device {} with passkey {}",
+                        device, passkey
+                    );
                     async move { ctx.reply(Ok(())) }
                 },
             );

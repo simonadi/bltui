@@ -26,6 +26,8 @@ impl BluetoothController {
         }
     }
 
+    /// Trigger the scan. Starting it will also power on the adapter
+    /// if it is off
     pub async fn trigger_scan(&mut self) -> Result<(), btleplug::Error> {
         self.scanning = !self.scanning;
         if !self.scanning {

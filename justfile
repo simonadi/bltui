@@ -7,7 +7,7 @@ install:
     just clean
     mkdir -p temp/bluetui-0.1.0
     cp -r bluetui temp/bluetui-0.1.0
-    cp -r bluez-async temp/bluetui-0.1.0
+    #cp -r bluez-async temp/bluetui-0.1.0
     cp -r btleplug temp/bluetui-0.1.0
     cp Cargo.toml temp/bluetui-0.1.0
     cp Cargo.lock temp/bluetui-0.1.0
