@@ -1,24 +1,19 @@
-use crate::app::AppState;
+use crate::app::AppNew;
 use crossterm::terminal::enable_raw_mode;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
-    widgets::ListItem,
     Terminal,
 };
 
 pub mod popup;
 pub mod widgets;
 
-use self::{
-    popup::{QuestionPopup, QuestionPopupItem, QuestionPopupState},
-    widgets::{
-        device_details::get_device_details,
-        devices::devices_list,
-        logger::get_logger_widget,
-        statics::{blue_box, main_commands, popup_commands, title},
-    },
+use self::widgets::{
+    device_details::get_device_details,
+    devices::devices_list,
+    logger::get_logger_widget,
+    statics::{main_commands, popup_commands, title},
 };
 
 pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
@@ -30,13 +25,8 @@ pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
     terminal
 }
 
-pub async fn draw_frame<'a, B: Backend>(
-    terminal: &mut Terminal<B>,
-    state: &std::sync::Arc<tokio::sync::Mutex<AppState<'_>>>,
-    scanning: bool,
-) {
-    let state = state.lock().await;
-    let selected_device = state.devices().get_selected_device().await;
+pub async fn draw_frame<B: Backend>(terminal: &mut Terminal<B>, app: &mut AppNew, scanning: bool) {
+    let selected_device = app.devices.get_selected_device().await;
 
     terminal
         .draw(|rect| {
@@ -64,16 +54,14 @@ pub async fn draw_frame<'a, B: Backend>(
 
             rect.render_widget(title(), chunks[0]);
             rect.render_stateful_widget(
-                devices_list(&state.devices),
+                devices_list(&app.devices),
                 main_chunks[0],
-                &mut state.devices().list_state,
+                &mut app.devices.list_state,
             );
             rect.render_widget(get_logger_widget(), right_chunks[1]);
             rect.render_widget(get_device_details(selected_device), right_chunks[0]);
 
-            
-
-            if let Some(popup) = &state.popup {
+            if let Some(popup) = &app.popup {
                 rect.render_widget(popup_commands(), chunks[2]);
                 let vertical_chunks = Layout::default()
                     .direction(Direction::Vertical)
@@ -93,7 +81,7 @@ pub async fn draw_frame<'a, B: Backend>(
                     ])
                     .split(vertical_chunks[1])[1];
 
-                rect.render_widget(popup.clone(), popup_chunk);
+                rect.render_widget(popup.get_widget(), popup_chunk);
             } else {
                 rect.render_widget(main_commands(scanning), chunks[2]);
             }

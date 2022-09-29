@@ -1,21 +1,144 @@
 use std::{
     fmt::{Debug, Display, Formatter},
-    sync::Arc,
     time::Duration,
 };
 
-use dbus::{
-    blocking::BlockingSender,
-    channel::MatchingReceiver,
-    message::MatchRule,
-    nonblock::{
-        stdintf::org_freedesktop_dbus::RequestNameReply, NonblockReply, Proxy, SyncConnection,
-    },
-    Message,
+use tokio::{
+    sync::{mpsc::Sender, oneshot},
+    time::timeout,
 };
-use dbus_crossroads::{Crossroads, IfaceBuilder};
+use zbus::{dbus_interface, Connection};
 
-use log::{debug, info};
+use crate::events::{AgentEvent, AppEvent};
+use log::debug;
+use zbus::fdo::Error;
+
+struct AgentServer {
+    tx: Sender<AppEvent>,
+}
+
+async fn send_and_wait_for_response<T>(
+    app_tx: Sender<AppEvent>,
+    event: AgentEvent,
+) {
+    let (tx, rx) = oneshot::channel();
+    app_tx.send(AppEvent::Agent(event)).await.unwrap();
+    timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+}
+
+#[dbus_interface(name = "org.bluez.Agent1")]
+impl AgentServer {
+    async fn release(&self) -> Result<(), Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::Release { tx }))
+            .await
+            .unwrap();
+        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+    }
+
+    async fn request_pin_code(
+        &self,
+        device: zvariant::ObjectPath<'_>,
+    ) -> Result<String, zbus::fdo::Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::RequestPincode { tx }))
+            .await
+            .unwrap();
+        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+    }
+
+    async fn display_pin_code(
+        &self,
+        device: zvariant::ObjectPath<'_>,
+        pincode: String,
+    ) -> Result<(), Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::DisplayPincode { pincode, tx }))
+            .await
+            .unwrap();
+        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+    }
+
+    async fn request_passkey(&self, device: zvariant::ObjectPath<'_>) -> Result<u32, Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::RequestPasskey { tx }))
+            .await
+            .unwrap();
+        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+    }
+
+    async fn display_passkey(
+        &self,
+        device: zvariant::ObjectPath<'_>,
+        passkey: u32,
+        entered: u16,
+    ) -> Result<(), Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::DisplayPasskey { passkey, tx }))
+            .await
+            .unwrap();
+        timeout(Duration::from_secs(20), rx)
+            .await
+            // .unwrap_or(Err(Error::TimedOut("timeout".to_string())))
+            .unwrap()
+            .unwrap()
+    }
+
+    async fn request_confirmation(
+        &self,
+        device: zvariant::ObjectPath<'_>,
+        passkey: u32,
+    ) -> Result<(), zbus::fdo::Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::RequestConfirmation {
+                passkey,
+                tx,
+            }))
+            .await
+            .unwrap();
+        debug!("Sent request for confirmation");
+        let result = timeout(Duration::from_secs(20), rx).await.unwrap().unwrap();
+        debug!("Received request for confirmation input");
+        result
+    }
+
+    async fn request_authorization(&self, device: zvariant::ObjectPath<'_>) -> Result<(), Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::RequestAuthorization { tx }))
+            .await
+            .unwrap();
+        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+    }
+
+    async fn authorize_service(
+        &self,
+        device: zvariant::ObjectPath<'_>,
+        uuid: String,
+    ) -> Result<(), Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::AuthorizeService { uuid, tx }))
+            .await
+            .unwrap();
+        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+    }
+
+    async fn cancel(&self) -> Result<(), Error> {
+        let (tx, rx) = oneshot::channel();
+        self.tx
+            .send(AppEvent::Agent(AgentEvent::Cancel { tx }))
+            .await
+            .unwrap();
+        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+    }
+}
 
 #[derive(Debug)]
 pub enum AgentCapability {
@@ -35,193 +158,63 @@ impl Display for AgentCapability {
 pub struct Agent<'a> {
     path: dbus::Path<'a>,
     capability: AgentCapability,
-    connection: Arc<dbus::nonblock::SyncConnection>,
+    connection: Connection,
 }
 
 impl Agent<'static> {
-    pub fn new(path: &str, capability: AgentCapability) -> Agent<'static> {
-        let (resource, connection) = dbus_tokio::connection::new_system_sync().unwrap();
-
-        let _handle = tokio::spawn(async {
-            let err = resource.await;
-            panic!("Lost connection to D-Bus: {}", err);
-        });
+    pub async fn initialize_dbus_connection(
+        path: &str,
+        capability: AgentCapability,
+    ) -> Agent<'static> {
+        let connection = Connection::system().await.unwrap();
 
         Agent {
             path: dbus::Path::new(path).unwrap(),
-            capability: capability,
+            capability,
             connection,
         }
     }
 
-    pub async fn register_and_request_default_agent(&self) {
-        let connection = std::sync::Arc::clone(&self.connection);
+    pub async fn request_name(&self, name: &str) {
+        self.connection.request_name("bluetui.agent").await.unwrap();
+    }
 
-        let proxy = Proxy::new(
-            "org.bluez",
-            "/org/bluez",
-            Duration::from_secs(2),
-            connection,
-        );
-        let (): () = proxy
-            .method_call(
-                "org.bluez.AgentManager1",
+    pub async fn register_agent(&self) {
+        let m = self
+            .connection
+            .call_method(
+                Some("org.bluez"),
+                "/org/bluez",
+                Some("org.bluez.AgentManager1"),
                 "RegisterAgent",
-                (&self.path, &self.capability.to_string()),
+                &(
+                    zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),
+                    self.capability.to_string(),
+                ),
             )
             .await
             .unwrap();
+    }
 
-        info!("Registered the agent");
-
-        let (): () = proxy
-            .method_call(
-                "org.bluez.AgentManager1",
+    pub async fn request_default_agent(&self) {
+        let m = self
+            .connection
+            .call_method(
+                Some("org.bluez"),
+                "/org/bluez",
+                Some("org.bluez.AgentManager1"),
                 "RequestDefaultAgent",
-                (&self.path,),
+                &(zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),),
             )
             .await
             .unwrap();
-
-        info!("Agent is now the default agent");
     }
 
-    async fn request_name(&self, c: &Arc<SyncConnection>) -> Result<(), dbus::Error> {
-        let request_reply = c.request_name("bluetui.agent", false, true, true).await?;
-
-        match request_reply {
-            RequestNameReply::AlreadyOwner => {
-                info!("already owner");
-            }
-            RequestNameReply::Exists => {
-                info!("exists");
-            }
-            RequestNameReply::InQueue => {
-                info!("in queue");
-            }
-            RequestNameReply::PrimaryOwner => {
-                info!("primary owner");
-            }
-        }
-
-        Ok(())
-    }
-
-    pub async fn start(&self) {
-        let c = std::sync::Arc::clone(&self.connection);
-
-        // Spawn a task that polls the Dbus to check that the connection is still alive.
-        // Panics when it's lost
-
-        // self.request_name(&c).await.unwrap();
-
-        let mut cr = Crossroads::new();
-        cr.set_async_support(Some((
-            c.clone(),
-            Box::new(|x| {
-                tokio::spawn(x);
-            }),
-        )));
-
-        let iface_token = cr.register("org.bluez.Agent1", |b: &mut IfaceBuilder<()>| {
-            b.method_with_cr_async("Release", (), (), |mut ctx, device, _: ()| {
-                info!("Reiceved Release command");
-                async move { ctx.reply(Ok(())) }
-            });
-
-            b.method_with_cr_async(
-                "RequestPinCode",
-                ("device",),
-                ("pincode",),
-                |mut ctx, _cr, (device,): (dbus::Path,)| {
-                    info!("Reiceved RequestPinCode command");
-                    async move { ctx.reply(Ok(("pincode",))) }
-                },
-            );
-
-            b.method_with_cr_async(
-                "DisplayPinCode",
-                ("device", "pincode"),
-                (),
-                |mut ctx, _cr, (device, pincode): (dbus::Path, String)| {
-                    info!("Reiceved DisplayPinCode command");
-                    async move { ctx.reply(Ok(())) }
-                },
-            );
-
-            b.method_with_cr_async(
-                "RequestPasskey",
-                ("device",),
-                ("passkey",),
-                |mut ctx, _cr, (device,): (dbus::Path,)| {
-                    info!("Reiceved RequestPasskey command");
-                    async move { ctx.reply(Ok((1_u32,))) }
-                },
-            );
-
-            b.method_with_cr_async(
-                "DisplayPasskey",
-                ("device", "passkey", "entered"),
-                (),
-                |mut ctx, _cr, (device, passkey, entered): (dbus::Path, u32, u16)| {
-                    info!("Reiceved DisplayPasskey command");
-                    async move { ctx.reply(Ok(())) }
-                },
-            );
-
-            b.method_with_cr_async(
-                "RequestConfirmation",
-                ("device", "passkey"),
-                (),
-                |mut ctx, _cr, (device, passkey): (dbus::Path, u32)| {
-                    debug!(
-                        "Received RequestConfirmation command for device {} with passkey {}",
-                        device, passkey
-                    );
-                    async move { ctx.reply(Ok(())) }
-                },
-            );
-
-            b.method_with_cr_async(
-                "RequestAuthorization",
-                ("device",),
-                (),
-                |mut ctx, _cr, (device,): (dbus::Path,)| {
-                    info!("Reiceved RequestAuthorization command");
-                    async move { ctx.reply(Ok(())) }
-                },
-            );
-
-            b.method_with_cr_async(
-                "AuthorizeService",
-                ("device", "uuid"),
-                (),
-                |mut ctx, _cr, (device, uuid): (dbus::Path, String)| {
-                    info!("Reiceved AuthorizeService command");
-                    async move { ctx.reply(Ok(())) }
-                },
-            );
-
-            b.method_with_cr_async("Cancel", (), (), |mut ctx, cr, _: ()| {
-                info!("Reiceved Cancel command");
-                async move { ctx.reply(Ok(())) }
-            });
-        });
-
-        let address = self.path.clone();
-
-        cr.insert(address, &[iface_token], ());
-
-        tokio::spawn(async move {
-            c.start_receive(
-                MatchRule::new_method_call(),
-                Box::new(move |msg, conn| {
-                    cr.handle_message(msg, conn).unwrap();
-                    true
-                }),
-            );
-            futures::future::pending::<()>().await;
-            unreachable!();
-        });
+    pub async fn start_server(&self, tx: Sender<AppEvent>) {
+        self.connection
+            .object_server()
+            .at("/bluetui/agent", AgentServer { tx })
+            .await
+            .unwrap();
     }
 }

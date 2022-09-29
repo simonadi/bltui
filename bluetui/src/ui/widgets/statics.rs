@@ -39,7 +39,7 @@ pub fn main_commands<'a>(scanning: bool) -> Paragraph<'a> {
 pub fn popup_commands<'a>() -> Paragraph<'a> {
     Paragraph::new(Spans::from(vec![
         Span::raw("⇵: move   "),
-        Span::raw("↲: confirm")
+        Span::raw("↲: confirm"),
     ]))
     .block(blue_box(None))
 }
