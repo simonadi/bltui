@@ -10,7 +10,7 @@ use bluetui::{
         tick::spawn_ticker, AppEvent,
     },
     logging::{init_file_logging, init_tui_logger},
-    ui::{draw_frame, widgets::popup::YesNoPopup},
+    ui::{draw_frame, initialize_terminal, widgets::popup::YesNoPopup},
     App,
 };
 use btleplug::api::CentralEvent;
@@ -18,7 +18,7 @@ use clap::Parser;
 use crossterm::{
     event::KeyCode,
     execute,
-    terminal::{disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
 use log::{debug, trace};
 
@@ -84,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     spawn_adapter_watcher(bt_controller.events().await, app.tx()).await;
 
-    
+    let mut terminal = initialize_terminal()?;
 
     while let Some(event) = app.events().await {
         match event {

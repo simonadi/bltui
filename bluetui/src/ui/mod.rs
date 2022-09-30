@@ -18,15 +18,15 @@ use self::widgets::{
     statics::{main_commands, popup_commands, title},
 };
 
-pub fn initialize_terminal() -> Terminal<CrosstermBackend<&Stdout>>{
+pub fn initialize_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, std::io::Error> {
     let mut stdout = std::io::stdout();
 
     execute!(stdout, EnterAlternateScreen)?;
     crossterm::terminal::enable_raw_mode()?;
-    let backend = tui::backend::CrosstermBackend::new(&stdout);
+    let backend = tui::backend::CrosstermBackend::new(stdout);
     let mut terminal = tui::Terminal::new(backend)?;
     terminal.clear()?;
-    terminal
+    Ok(terminal)
 }
 
 pub async fn draw_frame<B: Backend>(terminal: &mut Terminal<B>, app: &mut App, scanning: bool) {

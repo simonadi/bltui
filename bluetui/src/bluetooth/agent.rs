@@ -202,7 +202,7 @@ impl Agent<'static> {
                 "/org/bluez",
                 Some("org.bluez.AgentManager1"),
                 "UnregisterAgent",
-                &(zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),)
+                &(zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),),
             )
             .await
             .unwrap();
