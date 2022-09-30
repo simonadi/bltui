@@ -6,7 +6,7 @@ use tui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, List, ListItem, ListState, Paragraph, StatefulWidget, Widget},
+    widgets::{List, ListItem, ListState, Paragraph, StatefulWidget, Widget},
 };
 use zbus::fdo::Error;
 
@@ -17,14 +17,6 @@ pub trait Popup {
     fn cancel(&self);
     fn handle_keypress(&mut self, keycode: KeyCode);
 }
-
-// pub struct OptionItem<'a, F>
-// where
-//     F: FnOnce() -> (),
-// {
-//     item: ListItem<'a>,
-//     callback: F,
-// }
 
 pub struct YesNoPopup {
     question: String,
@@ -138,12 +130,12 @@ impl Widget for YesNoPopupWidget {
 
 // impl Widget for YesNoPopup {}
 
-pub struct PincodePopup {
-    question: String,
-    pincode: String,
-}
+// pub struct PincodePopup {
+//     question: String,
+//     pincode: String,
+// }
 
-pub struct PasskeyPopup {
-    question: String,
-    passkey: String,
-}
+// pub struct PasskeyPopup {
+//     question: String,
+//     passkey: String,
+// }

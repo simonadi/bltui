@@ -9,21 +9,12 @@ use tokio::{
 };
 use zbus::{dbus_interface, Connection};
 
-use crate::events::{AgentEvent, AppEvent};
+use crate::events::{agent::AgentEvent, AppEvent};
 use log::debug;
 use zbus::fdo::Error;
 
 struct AgentServer {
     tx: Sender<AppEvent>,
-}
-
-async fn send_and_wait_for_response<T>(
-    app_tx: Sender<AppEvent>,
-    event: AgentEvent,
-) {
-    let (tx, rx) = oneshot::channel();
-    app_tx.send(AppEvent::Agent(event)).await.unwrap();
-    timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
 }
 
 #[dbus_interface(name = "org.bluez.Agent1")]
@@ -39,7 +30,7 @@ impl AgentServer {
 
     async fn request_pin_code(
         &self,
-        device: zvariant::ObjectPath<'_>,
+        _device: zvariant::ObjectPath<'_>,
     ) -> Result<String, zbus::fdo::Error> {
         let (tx, rx) = oneshot::channel();
         self.tx
@@ -51,7 +42,7 @@ impl AgentServer {
 
     async fn display_pin_code(
         &self,
-        device: zvariant::ObjectPath<'_>,
+        _device: zvariant::ObjectPath<'_>,
         pincode: String,
     ) -> Result<(), Error> {
         let (tx, rx) = oneshot::channel();
@@ -62,7 +53,7 @@ impl AgentServer {
         timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
     }
 
-    async fn request_passkey(&self, device: zvariant::ObjectPath<'_>) -> Result<u32, Error> {
+    async fn request_passkey(&self, _device: zvariant::ObjectPath<'_>) -> Result<u32, Error> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::RequestPasskey { tx }))
@@ -73,7 +64,7 @@ impl AgentServer {
 
     async fn display_passkey(
         &self,
-        device: zvariant::ObjectPath<'_>,
+        _device: zvariant::ObjectPath<'_>,
         passkey: u32,
         entered: u16,
     ) -> Result<(), Error> {
@@ -82,16 +73,12 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::DisplayPasskey { passkey, tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx)
-            .await
-            // .unwrap_or(Err(Error::TimedOut("timeout".to_string())))
-            .unwrap()
-            .unwrap()
+        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
     }
 
     async fn request_confirmation(
         &self,
-        device: zvariant::ObjectPath<'_>,
+        _device: zvariant::ObjectPath<'_>,
         passkey: u32,
     ) -> Result<(), zbus::fdo::Error> {
         let (tx, rx) = oneshot::channel();
@@ -108,7 +95,7 @@ impl AgentServer {
         result
     }
 
-    async fn request_authorization(&self, device: zvariant::ObjectPath<'_>) -> Result<(), Error> {
+    async fn request_authorization(&self, _device: zvariant::ObjectPath<'_>) -> Result<(), Error> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::RequestAuthorization { tx }))
@@ -119,7 +106,7 @@ impl AgentServer {
 
     async fn authorize_service(
         &self,
-        device: zvariant::ObjectPath<'_>,
+        _device: zvariant::ObjectPath<'_>,
         uuid: String,
     ) -> Result<(), Error> {
         let (tx, rx) = oneshot::channel();
@@ -176,12 +163,11 @@ impl Agent<'static> {
     }
 
     pub async fn request_name(&self, name: &str) {
-        self.connection.request_name("bluetui.agent").await.unwrap();
+        self.connection.request_name(name).await.unwrap();
     }
 
-    pub async fn register_agent(&self) {
-        let m = self
-            .connection
+    pub async fn register(&self) {
+        self.connection
             .call_method(
                 Some("org.bluez"),
                 "/org/bluez",
@@ -196,15 +182,27 @@ impl Agent<'static> {
             .unwrap();
     }
 
-    pub async fn request_default_agent(&self) {
-        let m = self
-            .connection
+    pub async fn request_default(&self) {
+        self.connection
             .call_method(
                 Some("org.bluez"),
                 "/org/bluez",
                 Some("org.bluez.AgentManager1"),
                 "RequestDefaultAgent",
                 &(zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),),
+            )
+            .await
+            .unwrap();
+    }
+
+    pub async fn unregister(&self) {
+        self.connection
+            .call_method(
+                Some("org.bluez"),
+                "/org/bluez",
+                Some("org.bluez.AgentManager1"),
+                "UnregisterAgent",
+                &(zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),)
             )
             .await
             .unwrap();

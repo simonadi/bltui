@@ -1,0 +1,30 @@
+use std::path::PathBuf;
+
+use dirs::home_dir;
+
+fn get_logs_dir() -> PathBuf {
+    let mut logs_dir = home_dir().unwrap();
+    logs_dir.push(".bluetui");
+    logs_dir.push("logs");
+    logs_dir
+}
+
+fn get_log_file_path(logs_dir: PathBuf) -> PathBuf {
+    let mut log_file = logs_dir;
+    log_file.push(chrono::Utc::now().to_rfc3339());
+    log_file.set_extension("log");
+    log_file
+}
+
+pub fn init_tui_logger(log_level: log::LevelFilter) {
+    tui_logger::init_logger(log_level).unwrap();
+    tui_logger::set_default_level(log_level);
+}
+
+pub fn init_file_logging() -> Result<(), Box<dyn std::error::Error>> {
+    let logs_dir = get_logs_dir();
+    std::fs::create_dir_all(&logs_dir)?;
+    let log_file = get_log_file_path(logs_dir);
+    tui_logger::set_log_file(log_file.to_str().unwrap())?;
+    Ok(())
+}

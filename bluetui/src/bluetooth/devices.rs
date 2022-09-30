@@ -111,24 +111,3 @@ impl Default for Devices {
         Self::new()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn insert_new() {
-        let mut devices = Devices::new();
-        let device = Device {
-            periph_id: bluez_async::DeviceId::new("/path").into(),
-            address: "address".to_string(),
-            name: "name".to_string(),
-            connected: false,
-            paired: false,
-            // trusted: false,
-            rssi: None,
-            tx_power: None,
-        };
-        devices.insert_or_replace(device);
-    }
-}

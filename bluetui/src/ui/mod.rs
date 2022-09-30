@@ -1,13 +1,15 @@
-use crate::app::AppNew;
-use crossterm::terminal::enable_raw_mode;
+use std::io::Stdout;
+
+use crossterm::{execute, terminal::EnterAlternateScreen};
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     Terminal,
 };
 
-pub mod popup;
 pub mod widgets;
+
+use crate::App;
 
 use self::widgets::{
     device_details::get_device_details,
@@ -16,16 +18,18 @@ use self::widgets::{
     statics::{main_commands, popup_commands, title},
 };
 
-pub fn initialize_terminal() -> Terminal<CrosstermBackend<std::io::Stdout>> {
-    let stdout = std::io::stdout();
-    enable_raw_mode().unwrap();
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend).unwrap();
-    terminal.clear().unwrap();
+pub fn initialize_terminal() -> Terminal<CrosstermBackend<&Stdout>>{
+    let mut stdout = std::io::stdout();
+
+    execute!(stdout, EnterAlternateScreen)?;
+    crossterm::terminal::enable_raw_mode()?;
+    let backend = tui::backend::CrosstermBackend::new(&stdout);
+    let mut terminal = tui::Terminal::new(backend)?;
+    terminal.clear()?;
     terminal
 }
 
-pub async fn draw_frame<B: Backend>(terminal: &mut Terminal<B>, app: &mut AppNew, scanning: bool) {
+pub async fn draw_frame<B: Backend>(terminal: &mut Terminal<B>, app: &mut App, scanning: bool) {
     let selected_device = app.devices.get_selected_device().await;
 
     terminal
@@ -34,7 +38,6 @@ pub async fn draw_frame<B: Backend>(terminal: &mut Terminal<B>, app: &mut AppNew
 
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                // .constraints([Constraint::Percentage(7), Constraint::Percentage(90)])
                 .constraints([
                     Constraint::Length(3),
                     Constraint::Min(5),

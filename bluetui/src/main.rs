@@ -1,24 +1,26 @@
-use std::{path::PathBuf, pin::Pin, thread, time::Duration};
+use std::time::Duration;
 
 use bluetui::{
-    app::AppNew,
     bluetooth::{
         agent::{Agent, AgentCapability},
         controller::BluetoothController,
     },
-    events::{AgentEvent, AppEvent},
-    ui::{draw_frame, initialize_terminal, widgets::popup::YesNoPopup},
+    events::{
+        adapter::spawn_adapter_watcher, agent::AgentEvent, keys::spawn_keypress_watcher,
+        tick::spawn_ticker, AppEvent,
+    },
+    logging::{init_file_logging, init_tui_logger},
+    ui::{draw_frame, widgets::popup::YesNoPopup},
+    App,
 };
 use btleplug::api::CentralEvent;
 use clap::Parser;
 use crossterm::{
-    event::{Event, KeyCode},
-    terminal::disable_raw_mode,
+    event::KeyCode,
+    execute,
+    terminal::{disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use dirs::home_dir;
-use futures::{Stream, StreamExt};
 use log::{debug, trace};
-use tokio::time;
 
 #[macro_use]
 extern crate lazy_static;
@@ -53,92 +55,38 @@ fn translate_log_level(count: u8) -> log::LevelFilter {
     }
 }
 
-fn get_logs_dir() -> PathBuf {
-    let mut logs_dir = home_dir().unwrap();
-    logs_dir.push(".bluetui");
-    logs_dir.push("logs");
-    logs_dir
-}
-
-fn get_log_file_path(logs_dir: PathBuf) -> PathBuf {
-    let mut log_file = logs_dir.clone();
-    log_file.push(chrono::Utc::now().to_rfc3339());
-    log_file.set_extension("log");
-    log_file
-}
-
-fn spawn_ticker(tick_rate: Duration, tx: tokio::sync::mpsc::Sender<AppEvent>) {
-    let mut ticker = time::interval(tick_rate);
-
-    tokio::spawn(async move {
-        loop {
-            ticker.tick().await;
-            tx.send(AppEvent::Tick).await.unwrap();
-        }
-    });
-}
-
-fn spawn_keypress_watcher(tx: tokio::sync::mpsc::Sender<AppEvent>) {
-    thread::spawn(move || loop {
-        if crossterm::event::poll(*KEY_POLL_RATE).unwrap() {
-            if let Event::Key(key) = crossterm::event::read().unwrap() {
-                tx.blocking_send(AppEvent::Input(key)).unwrap();
-            }
-        }
-    });
-}
-
-async fn spawn_adapter_watcher(
-    mut events: Pin<Box<dyn Stream<Item = CentralEvent> + std::marker::Send>>,
-    tx: tokio::sync::mpsc::Sender<AppEvent>,
-) {
-    tokio::spawn(async move {
-        while let Some(event) = events.next().await {
-            tx.send(AppEvent::Adapter(event)).await.unwrap();
-        }
-    });
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // let mut stdout = stdout();
     let settings = AppSettings::parse();
 
     let log_level = translate_log_level(settings.debug);
 
-    tui_logger::init_logger(log_level).unwrap();
-    tui_logger::set_default_level(log_level);
-
+    init_tui_logger(log_level);
     if settings.log_to_file {
-        let logs_dir = get_logs_dir();
-        std::fs::create_dir_all(&logs_dir).expect("Could not create log directory");
-        let log_file = get_log_file_path(logs_dir);
-        println!("log  file : {:?}", log_file);
-        tui_logger::set_log_file(&log_file.to_str().unwrap()).unwrap();
+        init_file_logging()?;
     }
 
-    let mut terminal = initialize_terminal();
-
-    let (app_tx, mut rx) = tokio::sync::mpsc::channel::<AppEvent>(100);
-
-    let mut app = AppNew::new();
+    let mut app = App::new();
 
     let mut bt_controller = BluetoothController::from_first_adapter().await;
 
     let agent =
         Agent::initialize_dbus_connection("/bluetui/agent", AgentCapability::KeyboardDisplay).await;
-    agent.start_server(app_tx.clone()).await;
+    agent.start_server(app.tx()).await;
     agent.request_name("bluetui.agent").await;
-    agent.register_agent().await;
-    agent.request_default_agent().await;
+    agent.register().await;
+    agent.request_default().await;
 
-    spawn_ticker(*TICK_RATE, app_tx.clone());
+    spawn_ticker(*TICK_RATE, app.tx());
 
-    spawn_keypress_watcher(app_tx.clone());
+    spawn_keypress_watcher(app.tx());
 
-    spawn_adapter_watcher(bt_controller.events().await, app_tx.clone()).await;
-    // TODO : Spawn task that transmits central events
+    spawn_adapter_watcher(bt_controller.events().await, app.tx()).await;
 
-    while let Some(event) = rx.recv().await {
+    
+
+    while let Some(event) = app.events().await {
         match event {
             AppEvent::Agent(ev) => {
                 debug!("Received Agent event : {:?}", ev);
@@ -177,15 +125,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     match key.code {
                         KeyCode::Down => {
                             popup.move_selector_down();
-                            // app.popup.as_ref().unwrap().move_selector_down();
                         }
                         KeyCode::Up => {
                             popup.move_selector_up();
-                            // app.popup.unwrap().move_selector_up();
                         }
                         KeyCode::Enter => {
-                            // let tx = popup.get_tx();
-                            // app.popup.unwrap().confirm();
                             popup.confirm();
                             app.popup = None;
                         }
@@ -201,22 +145,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                         KeyCode::Char('c') => {
                             let controller = bt_controller.clone();
-                            let device = &app.devices.get_selected_device().await.unwrap();
-                            let periph_id = device.periph_id.clone();
-                            tokio::spawn(async move {
-                                controller.connect(&periph_id).await.unwrap();
-                            });
+                            let device_opt = &app.devices.get_selected_device().await;
+                            if let Some(device) = device_opt {
+                                let periph_id = device.periph_id.clone();
+                                tokio::spawn(async move {
+                                    controller.connect(&periph_id).await.unwrap();
+                                });
+                            }
                         }
                         KeyCode::Char('d') => {
                             let controller = bt_controller.clone();
-                            let device = &app.devices.get_selected_device().await.unwrap();
-                            let periph_id = device.periph_id.clone();
-                            tokio::spawn(async move {
-                                controller.disconnect(&periph_id).await.unwrap();
-                            });
+                            let device_opt = &app.devices.get_selected_device().await;
+                            if let Some(device) = device_opt {
+                                let periph_id = device.periph_id.clone();
+                                tokio::spawn(async move {
+                                    controller.disconnect(&periph_id).await.unwrap();
+                                });
+                            }
                         }
                         KeyCode::Char('s') => {
-                            bt_controller.trigger_scan().await.unwrap();
+                            bt_controller.trigger_scan().await?;
                         }
                         KeyCode::Char('q') => {
                             break;
@@ -228,7 +176,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             AppEvent::Tick => {
                 trace!("Frame tick");
-                // println!("tick");
                 draw_frame(&mut terminal, &mut app, bt_controller.scanning).await;
                 // if popup.is_some() {
                 // draw_popup();
@@ -237,8 +184,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    disable_raw_mode().unwrap();
-    terminal.clear().unwrap();
+    agent.unregister().await;
+
+    disable_raw_mode()?;
+
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
 
     Ok(())
 }
