@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use dirs::home_dir;
+use log::info;
 
 fn get_logs_dir() -> PathBuf {
     let mut logs_dir = home_dir().unwrap();
@@ -26,5 +27,6 @@ pub fn init_file_logging() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(&logs_dir)?;
     let log_file = get_log_file_path(logs_dir);
     tui_logger::set_log_file(log_file.to_str().unwrap())?;
+    info!("Logging to file {}", log_file.to_str().unwrap());
     Ok(())
 }

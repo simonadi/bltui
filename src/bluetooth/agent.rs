@@ -143,20 +143,20 @@ impl Display for AgentCapability {
 }
 
 pub struct Agent<'a> {
-    path: dbus::Path<'a>,
+    path: zvariant::ObjectPath<'a>,
     capability: AgentCapability,
     connection: Connection,
 }
 
 impl Agent<'static> {
     pub async fn initialize_dbus_connection(
-        path: &str,
+        path: String,
         capability: AgentCapability,
     ) -> Agent<'static> {
         let connection = Connection::system().await.unwrap();
 
         Agent {
-            path: dbus::Path::new(path).unwrap(),
+            path: zvariant::ObjectPath::try_from(path).unwrap(),
             capability,
             connection,
         }
@@ -173,13 +173,12 @@ impl Agent<'static> {
                 "/org/bluez",
                 Some("org.bluez.AgentManager1"),
                 "RegisterAgent",
-                &(
-                    zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),
-                    self.capability.to_string(),
-                ),
+                &(self.path.clone(), self.capability.to_string()),
             )
             .await
             .unwrap();
+
+        debug!("Registered the agent");
     }
 
     pub async fn request_default(&self) {
@@ -189,10 +188,12 @@ impl Agent<'static> {
                 "/org/bluez",
                 Some("org.bluez.AgentManager1"),
                 "RequestDefaultAgent",
-                &(zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),),
+                &(self.path.clone(),),
             )
             .await
             .unwrap();
+
+        debug!("Requested default agent");
     }
 
     pub async fn unregister(&self) {
@@ -202,10 +203,12 @@ impl Agent<'static> {
                 "/org/bluez",
                 Some("org.bluez.AgentManager1"),
                 "UnregisterAgent",
-                &(zvariant::ObjectPath::try_from(self.path.to_string()).unwrap(),),
+                &(self.path.clone(),),
             )
             .await
             .unwrap();
+
+        debug!("Unregistered the agent");
     }
 
     pub async fn start_server(&self, tx: Sender<AppEvent>) {
@@ -214,5 +217,7 @@ impl Agent<'static> {
             .at("/bluetui/agent", AgentServer { tx })
             .await
             .unwrap();
+
+        debug!("Started the agent server")
     }
 }

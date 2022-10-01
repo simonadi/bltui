@@ -26,8 +26,8 @@ use log::{debug, trace};
 extern crate lazy_static;
 
 lazy_static! {
-    static ref TICK_RATE: Duration = Duration::from_millis(7);
-    static ref KEY_POLL_RATE: Duration = Duration::from_millis(2);
+    static ref TICK_RATE: Duration = Duration::from_millis(16);
+    static ref KEY_POLL_RATE: Duration = Duration::from_millis(8);
 }
 
 #[derive(Debug, Parser)]
@@ -71,8 +71,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut bt_controller = BluetoothController::from_first_adapter().await;
 
-    let agent =
-        Agent::initialize_dbus_connection("/bluetui/agent", AgentCapability::KeyboardDisplay).await;
+    let agent = Agent::initialize_dbus_connection(
+        "/bluetui/agent".into(),
+        AgentCapability::KeyboardDisplay,
+    )
+    .await;
     agent.start_server(app.tx()).await;
     agent.request_name("bluetui.agent").await;
     agent.register().await;

@@ -1,5 +1,40 @@
-[workspace]
-members = [
-    "btleplug",
-    "bluetui",
-]
+[package]
+name = "bluetui"
+version = "0.1.0"
+edition = "2021"
+authors = ["clapmytrapp"]
+homepage = "https://github.com/clapmytrapp/bluetui"
+repository = "https://github.com/clapmytrapp/bluetui"
+description = ""
+keywords = ["bluetooth", "tui", "cli", "terminal"]
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# btleplug = { path = "../btleplug", features = ["serde"] }
+btleplug = { version = "0.10.1", features  = ["serde"]}
+clap = { version = "4.0.0", features = ["derive"] }
+# async
+futures = "0.3"
+tokio = { version = "1.20.0", features = ["full"] }
+# ui
+crossterm = "0.23"
+tui = "0.18"
+# logging
+dirs = "4.0.0"
+log = "0.4"
+chrono = "0.4.19"
+tui-logger="0.8"
+# utils
+lazy_static = "1.4.0"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = { version = "3.1.0", default-features = false, features = ["tokio"] }
+zvariant = "3.6.0"
+
+
+# [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+
+
+# [target.'cfg(target_os = "windows")'.dependencies]

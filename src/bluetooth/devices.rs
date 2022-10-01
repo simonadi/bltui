@@ -16,7 +16,7 @@ pub struct Device {
     pub address: String,
     pub name: String,
     pub connected: bool,
-    pub paired: bool,
+    // pub paired: bool,
     // pub trusted: bool,
     pub rssi: Option<i16>,
     pub tx_power: Option<i16>,

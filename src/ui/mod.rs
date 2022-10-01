@@ -1,6 +1,7 @@
 use std::io::Stdout;
 
 use crossterm::{execute, terminal::EnterAlternateScreen};
+use log::debug;
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
@@ -20,12 +21,12 @@ use self::widgets::{
 
 pub fn initialize_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, std::io::Error> {
     let mut stdout = std::io::stdout();
-
     execute!(stdout, EnterAlternateScreen)?;
     crossterm::terminal::enable_raw_mode()?;
     let backend = tui::backend::CrosstermBackend::new(stdout);
     let mut terminal = tui::Terminal::new(backend)?;
     terminal.clear()?;
+    debug!("Terminal initialized");
     Ok(terminal)
 }
 

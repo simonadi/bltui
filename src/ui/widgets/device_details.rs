@@ -30,14 +30,14 @@ pub fn get_device_details(selected_device: Option<Device>) -> Paragraph<'static>
                     Span::styled("no", Style::default().fg(Color::Red))
                 },
             ]),
-            Spans::from(vec![
-                Span::raw("Paired : "),
-                if device.paired {
-                    Span::styled("yes", Style::default().fg(Color::Green))
-                } else {
-                    Span::styled("no", Style::default().fg(Color::Red))
-                },
-            ]),
+            // Spans::from(vec![
+            //     Span::raw("Paired : "),
+            //     if device.paired {
+            //         Span::styled("yes", Style::default().fg(Color::Green))
+            //     } else {
+            //         Span::styled("no", Style::default().fg(Color::Red))
+            //     },
+            // ]),
             // Spans::from(vec![
             //     Span::raw("Trusted : "),
             //     if device.trusted {
