@@ -1,10 +1,10 @@
 [package]
-name = "bluetui"
+name = "bltui"
 version = "0.1.0"
 edition = "2021"
 authors = ["clapmytrapp"]
-homepage = "https://github.com/clapmytrapp/bluetui"
-repository = "https://github.com/clapmytrapp/bluetui"
+homepage = "https://github.com/clapmytrapp/bltui"
+repository = "https://github.com/clapmytrapp/bltui"
 description = ""
 keywords = ["bluetooth", "tui", "cli", "terminal"]
 license = "MIT"

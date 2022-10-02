@@ -5,7 +5,7 @@ use log::info;
 
 fn get_logs_dir() -> PathBuf {
     let mut logs_dir = home_dir().unwrap();
-    logs_dir.push(".bluetui");
+    logs_dir.push(".bltui");
     logs_dir.push("logs");
     logs_dir
 }

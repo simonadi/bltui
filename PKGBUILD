@@ -1,10 +1,10 @@
-pkgname=bluetui
+pkgname=bltui
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Bluetooth TUI"
 arch=("x86_64")
 license=("custom")
-url="https://github.com/clapmytrapp/bluetui"
+url="https://github.com/clapmytrapp/bltui"
 depends=("bluez")
 makedepends=("cargo")
 # source=("${pkgname}-${pkgver}.tar.gz::https://github.com/clapmytrapp/${pkgname}/archive/${pkgver}.tar.gz")

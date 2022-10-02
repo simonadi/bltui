@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bluetui::{
+use bltui::{
     bluetooth::{
         agent::{Agent, AgentCapability},
         controller::BluetoothController,
@@ -41,7 +41,7 @@ struct AppSettings {
     #[arg(short = 'u', long, action)]
     show_unknown: bool,
 
-    /// Log to file (/$homedir/.bluetui/logs)
+    /// Log to file (/$homedir/.bltui/logs)
     #[arg(short, long, action)]
     log_to_file: bool,
 }
@@ -71,13 +71,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut bt_controller = BluetoothController::from_first_adapter().await;
 
-    let agent = Agent::initialize_dbus_connection(
-        "/bluetui/agent".into(),
-        AgentCapability::KeyboardDisplay,
-    )
-    .await;
+    let agent =
+        Agent::initialize_dbus_connection("/bltui/agent".into(), AgentCapability::KeyboardDisplay)
+            .await;
     agent.start_server(app.tx()).await;
-    agent.request_name("bluetui.agent").await;
+    agent.request_name("bltui.agent").await;
     agent.register().await;
     agent.request_default().await;
 
@@ -106,6 +104,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             tx,
                         ));
                     }
+                    AgentEvent::DisplayPasskey { passkey, tx } => {
+                        app.popup = Some(YesNoPopup::new(format!("Passkey : {}", passkey), tx))
+                    }
+                    AgentEvent::DisplayPincode { pincode, tx } => {
+                        app.popup = Some(YesNoPopup::new(format!("Pincode : {}", pincode), tx))
+                    }
+                    AgentEvent::Release { tx } => break,
                     _ => {}
                 }
             }

@@ -45,7 +45,7 @@ pub fn popup_commands<'a>() -> Paragraph<'a> {
 }
 
 pub fn title<'a>() -> Paragraph<'a> {
-    Paragraph::new("bluetui")
+    Paragraph::new("bltui")
         .style(Style::default().fg(Color::White))
         .alignment(Alignment::Center)
         .block(blue_box(None))

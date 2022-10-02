@@ -1,4 +1,4 @@
-# bluetui 
+# bltui 
  
 ---
 
@@ -6,16 +6,16 @@
 
 ### Cargo
 
-`cargo install bluetui`
+`cargo install bltui`
 
 ### AUR
 
-`pacman -S bluetui`
+`pacman -S bltui`
 
 ## Usage
 
  - `-d/-dd`: enable debug/trace log level. Recommended to use file logging with it since logger output is small.
- - `-l`: log to file (`$HOME/.bluetui/logs`)
+ - `-l`: log to file (`$HOME/.bltui/logs`)
 
 ## Limitations
 

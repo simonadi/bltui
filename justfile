@@ -5,15 +5,15 @@ install:
     #!/bin/sh
     cd {{root}}
     just clean
-    mkdir -p temp/bluetui-0.1.0
-    cp -r bluetui temp/bluetui-0.1.0
-    #cp -r bluez-async temp/bluetui-0.1.0
-    cp -r btleplug temp/bluetui-0.1.0
-    cp Cargo.toml temp/bluetui-0.1.0
-    cp Cargo.lock temp/bluetui-0.1.0
+    mkdir -p temp/bltui-0.1.0
+    cp -r bltui temp/bltui-0.1.0
+    #cp -r bluez-async temp/bltui-0.1.0
+    cp -r btleplug temp/bltui-0.1.0
+    cp Cargo.toml temp/bltui-0.1.0
+    cp Cargo.lock temp/bltui-0.1.0
     ln ./PKGBUILD ./temp/PKGBUILD
     cd temp
-    tar czf bluetui-0.1.0.tar.gz bluetui-0.1.0
+    tar czf bltui-0.1.0.tar.gz bltui-0.1.0
     sed -i --follow-symlinks '$ d' PKGBUILD
     makepkg -g >> PKGBUILD
     makepkg --force -si
@@ -36,12 +36,12 @@ clean:
     rm -f **/*.tar.gz
     rm -f *.pkg.tar.zst
     rm -rf src
-    rm -rf bluetui-*
+    rm -rf bltui-*
 
 check:
     #!/bin/sh
-    cargo check -p bluetui
+    cargo check -p bltui
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
-    cargo clippy -p bluetui
+    cargo clippy -p bltui
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
     cargo fmt

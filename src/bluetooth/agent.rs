@@ -214,7 +214,7 @@ impl Agent<'static> {
     pub async fn start_server(&self, tx: Sender<AppEvent>) {
         self.connection
             .object_server()
-            .at("/bluetui/agent", AgentServer { tx })
+            .at("/bltui/agent", AgentServer { tx })
             .await
             .unwrap();
 
