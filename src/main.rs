@@ -20,7 +20,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
-use log::{debug, trace};
+use log::{debug, trace, error, info};
 
 #[macro_use]
 extern crate lazy_static;
@@ -157,7 +157,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             if let Some(device) = device_opt {
                                 let periph_id = device.periph_id.clone();
                                 tokio::spawn(async move {
-                                    controller.connect(&periph_id).await.unwrap();
+                                    match controller.connect(&periph_id).await {
+                                        Ok(()) => {info!("Successfuly connected")}
+                                        Err(_) => {error!("Failed connecting to device")}
+                                    }
                                 });
                             }
                         }
@@ -167,7 +170,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             if let Some(device) = device_opt {
                                 let periph_id = device.periph_id.clone();
                                 tokio::spawn(async move {
-                                    controller.disconnect(&periph_id).await.unwrap();
+                                    match controller.disconnect(&periph_id).await {
+                                        Ok(()) => {info!("Successfuly disconnected")}
+                                        Err(_) => {error!("Failed disconnecting from device")}
+                                    }
                                 });
                             }
                         }

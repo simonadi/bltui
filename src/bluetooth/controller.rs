@@ -46,6 +46,7 @@ impl BluetoothController {
             info!("Device is already connected");
             Ok(())
         } else {
+            info!("Connecting to device");
             periph.connect().await
         }
     }
@@ -57,6 +58,7 @@ impl BluetoothController {
             info!("Device already disconnected");
             Ok(())
         } else {
+            info!("Disconnecting from device");
             periph.disconnect().await
         }
     }
