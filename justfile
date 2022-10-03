@@ -45,3 +45,6 @@ check:
     cargo clippy -p bltui
     printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
     cargo fmt
+
+commit:
+    convco commit
