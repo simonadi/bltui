@@ -20,7 +20,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
-use log::{debug, trace, error, info};
+use log::{debug, error, info, trace};
 
 #[macro_use]
 extern crate lazy_static;
@@ -44,6 +44,10 @@ struct AppSettings {
     /// Log to file (/$homedir/.bltui/logs)
     #[arg(short, long, action)]
     log_to_file: bool,
+
+    /// Specify which adapter to use
+    #[arg(short, long)]
+    adapter: Option<String>,
 }
 
 fn translate_log_level(count: u8) -> log::LevelFilter {
@@ -57,7 +61,6 @@ fn translate_log_level(count: u8) -> log::LevelFilter {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // let mut stdout = stdout();
     let settings = AppSettings::parse();
 
     let log_level = translate_log_level(settings.debug);
@@ -69,7 +72,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut app = App::new();
 
-    let mut bt_controller = BluetoothController::from_first_adapter().await;
+    let mut bt_controller = if let Some(adapter) = settings.adapter {
+        BluetoothController::from_adapter(&adapter).await?
+    } else {
+        BluetoothController::from_first_adapter().await
+    };
 
     let agent =
         Agent::initialize_dbus_connection("/bltui/agent".into(), AgentCapability::KeyboardDisplay)
@@ -83,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     spawn_keypress_watcher(app.tx());
 
-    spawn_adapter_watcher(bt_controller.events().await, app.tx()).await;
+    spawn_adapter_watcher(bt_controller.events().await?, app.tx()).await;
 
     let mut terminal = initialize_terminal()?;
 
@@ -158,8 +165,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 let periph_id = device.periph_id.clone();
                                 tokio::spawn(async move {
                                     match controller.connect(&periph_id).await {
-                                        Ok(()) => {info!("Successfuly connected")}
-                                        Err(_) => {error!("Failed connecting to device")}
+                                        Ok(()) => {
+                                            info!("Successfuly connected")
+                                        }
+                                        Err(_) => {
+                                            error!("Failed connecting to device")
+                                        }
                                     }
                                 });
                             }
@@ -171,8 +182,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 let periph_id = device.periph_id.clone();
                                 tokio::spawn(async move {
                                     match controller.disconnect(&periph_id).await {
-                                        Ok(()) => {info!("Successfuly disconnected")}
-                                        Err(_) => {error!("Failed disconnecting from device")}
+                                        Ok(()) => {
+                                            info!("Successfuly disconnected")
+                                        }
+                                        Err(_) => {
+                                            error!("Failed disconnecting from device")
+                                        }
                                     }
                                 });
                             }

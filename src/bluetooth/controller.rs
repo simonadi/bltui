@@ -1,3 +1,4 @@
+use crate::Error;
 use btleplug::{
     api::{Central, CentralEvent, Manager as _, Peripheral as _, ScanFilter},
     platform::{Adapter, Manager, Peripheral, PeripheralId},
@@ -14,6 +15,26 @@ pub struct BluetoothController {
     pub scanning: bool,
 }
 
+async fn get_adapter(adapters: Vec<Adapter>, id: &str) -> Result<Adapter, Error> {
+    for adapter in adapters.into_iter() {
+        let adapter_id = adapter
+            .adapter_info()
+            .await
+            .unwrap()
+            .as_str()
+            .split(" ")
+            .next()
+            .unwrap()
+            .to_string();
+        if adapter_id == id {
+            return Ok(adapter);
+        }
+    }
+    Err(Error::InvalidInput(
+        "no adapter was found for the given name".to_string(),
+    ))
+}
+
 impl BluetoothController {
     pub async fn from_first_adapter() -> BluetoothController {
         let manager = Manager::new().await.unwrap();
@@ -26,49 +47,62 @@ impl BluetoothController {
         }
     }
 
+    pub async fn from_adapter(id: &str) -> Result<BluetoothController, Box<dyn std::error::Error>> {
+        let manager = Manager::new().await?;
+        let adapters = manager.adapters().await?;
+
+        Ok(BluetoothController {
+            adapter: get_adapter(adapters, id).await?,
+            scanning: false,
+        })
+    }
+
     /// Trigger the scan. Starting it will also power on the adapter
     /// if it is off
     pub async fn trigger_scan(&mut self) -> Result<(), btleplug::Error> {
         self.scanning = !self.scanning;
         if !self.scanning {
             info!("Stopping the scan");
-            self.adapter.stop_scan().await
+            self.adapter.stop_scan().await?;
+            Ok(())
         } else {
             info!("Starting the scan");
-            self.adapter.start_scan(ScanFilter::default()).await
+            self.adapter.start_scan(ScanFilter::default()).await?;
+            Ok(())
         }
     }
 
     pub async fn connect(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
         let periph = self.adapter.peripheral(periph_id).await?;
 
-        if periph.is_connected().await.unwrap() {
+        if periph.is_connected().await? {
             info!("Device is already connected");
             Ok(())
         } else {
             info!("Connecting to device");
-            periph.connect().await
+            periph.connect().await?;
+            Ok(())
         }
     }
 
     pub async fn disconnect(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
         let periph = self.adapter.peripheral(periph_id).await?;
 
-        if !periph.is_connected().await.unwrap() {
+        if !periph.is_connected().await? {
             info!("Device already disconnected");
             Ok(())
         } else {
             info!("Disconnecting from device");
-            periph.disconnect().await
+            periph.disconnect().await?;
+            Ok(())
         }
     }
 
-    pub async fn events(&self) -> Pin<Box<dyn Stream<Item = CentralEvent> + std::marker::Send>> {
-        self.adapter.events().await.unwrap()
-    }
-
-    pub async fn get_peripheral(&self, periph_id: &PeripheralId) -> Peripheral {
-        self.adapter.peripheral(periph_id).await.unwrap()
+    pub async fn events(
+        &self,
+    ) -> Result<Pin<Box<dyn Stream<Item = CentralEvent> + std::marker::Send>>, btleplug::Error>
+    {
+        self.adapter.events().await
     }
 
     pub async fn get_device(&self, periph_id: &PeripheralId) -> Device {

@@ -8,6 +8,16 @@ pub mod events;
 pub mod logging;
 pub mod ui;
 
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("Error in BT stuff")]
+    BluetoothError,
+    #[error("Invalid input : {}", .0)]
+    InvalidInput(String),
+}
+
+// impl From<btleplug::Error> for Error
+
 pub struct App {
     pub devices: Devices,
     pub popup: Option<YesNoPopup>,
