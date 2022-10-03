@@ -20,7 +20,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
-use log::{debug, error, info, trace};
+use log::{debug, error, info, trace, warn};
 
 #[macro_use]
 extern crate lazy_static;
@@ -112,13 +112,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         ));
                     }
                     AgentEvent::DisplayPasskey { passkey, tx } => {
-                        app.popup = Some(YesNoPopup::new(format!("Passkey : {}", passkey), tx))
+                        app.popup = Some(YesNoPopup::new(format!("Passkey : {}", passkey), tx));
                     }
                     AgentEvent::DisplayPincode { pincode, tx } => {
-                        app.popup = Some(YesNoPopup::new(format!("Pincode : {}", pincode), tx))
+                        app.popup = Some(YesNoPopup::new(format!("Pincode : {}", pincode), tx));
                     }
-                    AgentEvent::Release { tx } => break,
-                    _ => {}
+                    AgentEvent::Release { tx } => {
+                        error!("Agent release was requested, shutting down");
+                        std::thread::sleep(Duration::from_secs(5));
+                        tx.send(Ok(())).unwrap();
+                        break
+                    },
+                    AgentEvent::Cancel { tx } => {
+                        warn!("Pairing cancelled");
+                        app.popup = None;
+                        tx.send(Ok(())).unwrap();
+                    }
+                    AgentEvent::RequestAuthorization { tx } => {
+                        app.popup = Some(YesNoPopup::new(format!("Accept pairing authorization ?"), tx));
+                    }
+                    AgentEvent::RequestPasskey { tx } => {
+                        tx.send(Ok(0_u32)).unwrap();
+                    }
+                    AgentEvent::RequestPincode { tx } => {
+                        tx.send(Ok(String::from("wontwork"))).unwrap();
+                    }
                 }
             }
             AppEvent::Adapter(ev) => {
