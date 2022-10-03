@@ -1,7 +1,7 @@
 use crate::Error;
 use btleplug::{
     api::{Central, CentralEvent, Manager as _, Peripheral as _, ScanFilter},
-    platform::{Adapter, Manager, Peripheral, PeripheralId},
+    platform::{Adapter, Manager, PeripheralId},
 };
 use futures::Stream;
 use log::info;

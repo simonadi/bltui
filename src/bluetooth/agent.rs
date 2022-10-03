@@ -66,7 +66,7 @@ impl AgentServer {
         &self,
         _device: zvariant::ObjectPath<'_>,
         passkey: u32,
-        entered: u16,
+        _entered: u16,
     ) -> Result<(), Error> {
         let (tx, rx) = oneshot::channel();
         self.tx
