@@ -121,15 +121,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         error!("Agent release was requested, shutting down");
                         std::thread::sleep(Duration::from_secs(5));
                         tx.send(Ok(())).unwrap();
-                        break
-                    },
+                        break;
+                    }
                     AgentEvent::Cancel { tx } => {
                         warn!("Pairing cancelled");
                         app.popup = None;
                         tx.send(Ok(())).unwrap();
                     }
                     AgentEvent::RequestAuthorization { tx } => {
-                        app.popup = Some(YesNoPopup::new(format!("Accept pairing authorization ?"), tx));
+                        app.popup = Some(YesNoPopup::new(
+                            format!("Accept pairing authorization ?"),
+                            tx,
+                        ));
                     }
                     AgentEvent::RequestPasskey { tx } => {
                         tx.send(Ok(0_u32)).unwrap();
@@ -147,7 +150,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     | CentralEvent::DeviceConnected(periph_id)
                     | CentralEvent::DeviceDisconnected(periph_id) => {
                         let device = bt_controller.get_device(&periph_id).await;
-                        app.devices.insert_or_replace(device);
+                        if !(device.name == "Unknown" && !settings.show_unknown) {
+                            app.devices.insert_or_replace(device);
+                        }
                     }
                     _ => {}
                 }
@@ -170,10 +175,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 } else {
                     match key.code {
-                        KeyCode::Down => {
+                        KeyCode::Down | KeyCode::Char('j') => {
                             app.devices.move_selector_down();
                         }
-                        KeyCode::Up => {
+                        KeyCode::Up | KeyCode::Char('k') => {
                             app.devices.move_selector_up();
                         }
                         KeyCode::Char('c') => {

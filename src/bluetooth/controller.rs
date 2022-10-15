@@ -15,26 +15,6 @@ pub struct BluetoothController {
     pub scanning: bool,
 }
 
-async fn get_adapter(adapters: Vec<Adapter>, id: &str) -> Result<Adapter, Error> {
-    for adapter in adapters.into_iter() {
-        let adapter_id = adapter
-            .adapter_info()
-            .await
-            .unwrap()
-            .as_str()
-            .split(" ")
-            .next()
-            .unwrap()
-            .to_string();
-        if adapter_id == id {
-            return Ok(adapter);
-        }
-    }
-    Err(Error::InvalidInput(
-        "no adapter was found for the given name".to_string(),
-    ))
-}
-
 impl BluetoothController {
     pub async fn from_first_adapter() -> BluetoothController {
         let manager = Manager::new().await.unwrap();
@@ -47,14 +27,29 @@ impl BluetoothController {
         }
     }
 
-    pub async fn from_adapter(id: &str) -> Result<BluetoothController, Box<dyn std::error::Error>> {
+    pub async fn from_adapter(id: &str) -> Result<BluetoothController, Error> {
         let manager = Manager::new().await?;
         let adapters = manager.adapters().await?;
-
-        Ok(BluetoothController {
-            adapter: get_adapter(adapters, id).await?,
-            scanning: false,
-        })
+        for adapter in adapters.into_iter() {
+            let adapter_id = adapter
+                .adapter_info()
+                .await
+                .unwrap()
+                .as_str()
+                .split(" ")
+                .next()
+                .unwrap()
+                .to_string();
+            if adapter_id == id {
+                return Ok(BluetoothController {
+                    adapter,
+                    scanning: false,
+                });
+            }
+        }
+        Err(Error::InvalidInput(
+            "no adapter was found for the given name".to_string(),
+        ))
     }
 
     /// Trigger the scan. Starting it will also power on the adapter

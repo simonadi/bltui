@@ -6,9 +6,7 @@ install:
     cd {{root}}
     just clean
     mkdir -p temp/bltui-0.1.0
-    cp -r bltui temp/bltui-0.1.0
-    #cp -r bluez-async temp/bltui-0.1.0
-    cp -r btleplug temp/bltui-0.1.0
+    cp -r src temp/bltui-0.1.0
     cp Cargo.toml temp/bltui-0.1.0
     cp Cargo.lock temp/bltui-0.1.0
     ln ./PKGBUILD ./temp/PKGBUILD
@@ -35,7 +33,6 @@ clean:
     rm -rf pkg
     rm -f **/*.tar.gz
     rm -f *.pkg.tar.zst
-    rm -rf src
     rm -rf bltui-*
 
 check:

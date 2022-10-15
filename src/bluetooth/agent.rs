@@ -11,15 +11,28 @@ use zbus::{dbus_interface, Connection};
 
 use crate::events::{agent::AgentEvent, AppEvent};
 use log::debug;
-use zbus::fdo::Error;
+use zbus::DBusError;
+
+#[derive(Debug, DBusError, PartialEq)]
+#[dbus_error(prefix = "org.bluez.Error", impl_display = true)]
+pub enum BluezError {
+    Rejected(String),
+    Canceled(String),
+}
 
 struct AgentServer {
     tx: Sender<AppEvent>,
 }
 
+// async fn handle_event<T>(event: AgentEvent) -> Result<T, BluezError> {
+//     let (tx, rx) = oneshot::channel();
+//     self.tx.send(event).await.unwrap();
+//     timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+// }
+
 #[dbus_interface(name = "org.bluez.Agent1")]
 impl AgentServer {
-    async fn release(&self) -> Result<(), Error> {
+    async fn release(&self) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::Release { tx }))
@@ -31,7 +44,7 @@ impl AgentServer {
     async fn request_pin_code(
         &self,
         _device: zvariant::ObjectPath<'_>,
-    ) -> Result<String, zbus::fdo::Error> {
+    ) -> Result<String, BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::RequestPincode { tx }))
@@ -44,7 +57,7 @@ impl AgentServer {
         &self,
         _device: zvariant::ObjectPath<'_>,
         pincode: String,
-    ) -> Result<(), Error> {
+    ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::DisplayPincode { pincode, tx }))
@@ -53,7 +66,7 @@ impl AgentServer {
         timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
     }
 
-    async fn request_passkey(&self, _device: zvariant::ObjectPath<'_>) -> Result<u32, Error> {
+    async fn request_passkey(&self, _device: zvariant::ObjectPath<'_>) -> Result<u32, BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::RequestPasskey { tx }))
@@ -67,7 +80,7 @@ impl AgentServer {
         _device: zvariant::ObjectPath<'_>,
         passkey: u32,
         _entered: u16,
-    ) -> Result<(), Error> {
+    ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::DisplayPasskey { passkey, tx }))
@@ -80,7 +93,7 @@ impl AgentServer {
         &self,
         _device: zvariant::ObjectPath<'_>,
         passkey: u32,
-    ) -> Result<(), zbus::fdo::Error> {
+    ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::RequestConfirmation {
@@ -95,7 +108,10 @@ impl AgentServer {
         result
     }
 
-    async fn request_authorization(&self, _device: zvariant::ObjectPath<'_>) -> Result<(), Error> {
+    async fn request_authorization(
+        &self,
+        _device: zvariant::ObjectPath<'_>,
+    ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::RequestAuthorization { tx }))
@@ -108,7 +124,7 @@ impl AgentServer {
         &self,
         _device: zvariant::ObjectPath<'_>,
         uuid: String,
-    ) -> Result<(), Error> {
+    ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::AuthorizeService { uuid, tx }))
@@ -117,7 +133,7 @@ impl AgentServer {
         timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
     }
 
-    async fn cancel(&self) -> Result<(), Error> {
+    async fn cancel(&self) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
             .send(AppEvent::Agent(AgentEvent::Cancel { tx }))

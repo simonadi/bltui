@@ -1,37 +1,17 @@
+use crate::bluetooth::agent::BluezError;
 use tokio::sync::oneshot::Sender;
-use zbus::fdo::Error;
+
+type Responder<T> = Sender<Result<T, BluezError>>;
 
 #[derive(Debug)]
 pub enum AgentEvent {
-    Release {
-        tx: Sender<Result<(), Error>>,
-    },
-    RequestPincode {
-        tx: Sender<Result<String, Error>>,
-    },
-    DisplayPincode {
-        pincode: String,
-        tx: Sender<Result<(), Error>>,
-    },
-    RequestPasskey {
-        tx: Sender<Result<u32, Error>>,
-    },
-    DisplayPasskey {
-        passkey: u32,
-        tx: Sender<Result<(), Error>>,
-    },
-    RequestConfirmation {
-        passkey: u32,
-        tx: Sender<Result<(), Error>>,
-    },
-    RequestAuthorization {
-        tx: Sender<Result<(), Error>>,
-    },
-    AuthorizeService {
-        uuid: String,
-        tx: Sender<Result<(), Error>>,
-    },
-    Cancel {
-        tx: Sender<Result<(), Error>>,
-    },
+    Release { tx: Responder<()> },
+    RequestPincode { tx: Responder<String> },
+    DisplayPincode { pincode: String, tx: Responder<()> },
+    RequestPasskey { tx: Responder<u32> },
+    DisplayPasskey { passkey: u32, tx: Responder<()> },
+    RequestConfirmation { passkey: u32, tx: Responder<()> },
+    RequestAuthorization { tx: Responder<()> },
+    AuthorizeService { uuid: String, tx: Responder<()> },
+    Cancel { tx: Responder<()> },
 }

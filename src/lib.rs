@@ -11,7 +11,7 @@ pub mod ui;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Error in BT stuff")]
-    BluetoothError,
+    BluetoothError(#[from] btleplug::Error),
     #[error("Invalid input : {}", .0)]
     InvalidInput(String),
 }

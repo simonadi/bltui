@@ -1,5 +1,6 @@
 use std::cmp::min;
 
+use crate::bluetooth::agent::BluezError;
 use crossterm::event::KeyCode;
 use tokio::sync::oneshot::Sender;
 use tui::{
@@ -8,7 +9,6 @@ use tui::{
     style::{Color, Style},
     widgets::{List, ListItem, ListState, Paragraph, StatefulWidget, Widget},
 };
-use zbus::fdo::Error;
 
 use super::statics::blue_box;
 
@@ -21,15 +21,15 @@ pub trait Popup {
 pub struct YesNoPopup {
     question: String,
     state: ListState,
-    pub tx: Option<Sender<Result<(), Error>>>,
+    responder: Option<Sender<Result<(), BluezError>>>,
 }
 
 impl YesNoPopup {
-    pub fn new(question: String, tx: Sender<Result<(), Error>>) -> YesNoPopup {
+    pub fn new(question: String, tx: Sender<Result<(), BluezError>>) -> YesNoPopup {
         YesNoPopup {
             question,
             state: ListState::default(),
-            tx: Some(tx),
+            responder: Some(tx),
         }
     }
 
@@ -66,19 +66,15 @@ impl YesNoPopup {
             if index == 0 {
                 Ok(())
             } else {
-                Err(zbus::fdo::Error::AccessDenied("refused".into()))
+                Err(BluezError::Rejected("rejected".to_string()))
             }
         } else {
-            Err(zbus::fdo::Error::AccessDenied("refused".into()))
+            Err(BluezError::Canceled("canceled".to_string()))
         };
 
-        let tx = self.tx.take().unwrap();
+        let tx = self.responder.take().unwrap();
 
         tx.send(result).unwrap();
-    }
-
-    pub fn get_tx(&mut self) -> Sender<Result<(), zbus::fdo::Error>> {
-        self.tx.take().unwrap()
     }
 }
 
