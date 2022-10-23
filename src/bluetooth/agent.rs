@@ -24,12 +24,6 @@ struct AgentServer {
     tx: Sender<AppEvent>,
 }
 
-// async fn handle_event<T>(event: AgentEvent) -> Result<T, BluezError> {
-//     let (tx, rx) = oneshot::channel();
-//     self.tx.send(event).await.unwrap();
-//     timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
-// }
-
 #[dbus_interface(name = "org.bluez.Agent1")]
 impl AgentServer {
     async fn release(&self) -> Result<(), BluezError> {

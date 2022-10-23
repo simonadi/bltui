@@ -4,7 +4,7 @@ use btleplug::{
     platform::{Adapter, Manager, PeripheralId},
 };
 use futures::Stream;
-use log::info;
+use log::{info, error};
 use std::pin::Pin;
 
 use crate::bluetooth::devices::Device;
@@ -75,7 +75,7 @@ impl BluetoothController {
         }
     }
 
-    pub async fn connect(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
+    pub async fn connect(&self, periph_id: &PeripheralId) -> Result<(), Error> {
         let periph = self.adapter.peripheral(periph_id).await?;
         let properties = periph.properties().await.unwrap().unwrap();
         let name = get_periph_name(properties.local_name);
@@ -85,7 +85,13 @@ impl BluetoothController {
             Ok(())
         } else {
             info!("Connecting to {}", name);
-            periph.connect().await?;
+            // periph.connect().await.expect();
+            match periph.connect().await {
+                Ok(()) => {}
+                Err(_) => {
+                    error!("Failed connecting to {}", name);
+                }
+            }
             Ok(())
         }
     }
@@ -100,7 +106,14 @@ impl BluetoothController {
             Ok(())
         } else {
             info!("Disconnecting from {}", name);
-            periph.disconnect().await?;
+            match periph.disconnect().await {
+                Ok(()) => {
+                    
+                }
+                Err(_) => {
+                    error!("Failed disconnecting from {}", name);
+                }
+            };
             Ok(())
         }
     }

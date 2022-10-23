@@ -145,10 +145,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             AppEvent::Adapter(ev) => {
                 trace!("Received adapter event : {:?}", ev);
                 match ev {
-                    CentralEvent::DeviceDiscovered(periph_id)
-                    | CentralEvent::DeviceUpdated(periph_id)
-                    | CentralEvent::DeviceConnected(periph_id)
-                    | CentralEvent::DeviceDisconnected(periph_id) => {
+                    CentralEvent::DeviceDiscovered(periph_id) => {
+                        debug!("Device discovered");
+                        let device = bt_controller.get_device(&periph_id).await;
+                        if device.name != "Unknown" || settings.show_unknown {
+                            app.devices.insert_or_replace(device);
+                        }
+                    }
+                    CentralEvent::DeviceConnected(periph_id) => {
+                        info!("Connected to");
+                        let device = bt_controller.get_device(&periph_id).await;
+                        if device.name != "Unknown" || settings.show_unknown {
+                            app.devices.insert_or_replace(device);
+                        }
+                    }
+                    CentralEvent::DeviceDisconnected(periph_id) => {
+                        info!("Disconnected from ");
+                        let device = bt_controller.get_device(&periph_id).await;
+                        if device.name != "Unknown" || settings.show_unknown {
+                            app.devices.insert_or_replace(device);
+                        }
+                    }
+                    CentralEvent::DeviceUpdated(periph_id) => {
                         let device = bt_controller.get_device(&periph_id).await;
                         if device.name != "Unknown" || settings.show_unknown {
                             app.devices.insert_or_replace(device);
@@ -161,10 +179,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 debug!("Received input key : {:?}", key);
                 if let Some(popup) = &mut app.popup {
                     match key.code {
-                        KeyCode::Down => {
+                        KeyCode::Down | KeyCode::Char('j') => {
                             popup.move_selector_down();
                         }
-                        KeyCode::Up => {
+                        KeyCode::Up | KeyCode::Char('k') => {
                             popup.move_selector_up();
                         }
                         KeyCode::Enter => {
@@ -189,10 +207,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 tokio::spawn(async move {
                                     match controller.connect(&periph_id).await {
                                         Ok(()) => {
-                                            info!("Successfuly connected")
+                                            // info!("Successfuly connected")
                                         }
                                         Err(_) => {
-                                            error!("Failed connecting to device")
+                                            // error!("Failed connecting to device")
                                         }
                                     }
                                 });
@@ -206,10 +224,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 tokio::spawn(async move {
                                     match controller.disconnect(&periph_id).await {
                                         Ok(()) => {
-                                            info!("Successfuly disconnected")
+                                            // info!("Successfuly disconnected")
                                         }
                                         Err(_) => {
-                                            error!("Failed disconnecting from device")
+                                            // error!("Failed disconnecting from device")
                                         }
                                     }
                                 });
