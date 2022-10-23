@@ -130,7 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     AgentEvent::RequestAuthorization { tx } => {
                         app.popup = Some(YesNoPopup::new(
-                            format!("Accept pairing authorization ?"),
+                            "Accept pairing authorization ?".to_string(),
                             tx,
                         ));
                     }
@@ -150,7 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     | CentralEvent::DeviceConnected(periph_id)
                     | CentralEvent::DeviceDisconnected(periph_id) => {
                         let device = bt_controller.get_device(&periph_id).await;
-                        if !(device.name == "Unknown" && !settings.show_unknown) {
+                        if device.name != "Unknown" || settings.show_unknown {
                             app.devices.insert_or_replace(device);
                         }
                     }

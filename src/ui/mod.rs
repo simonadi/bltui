@@ -19,7 +19,6 @@ use self::widgets::{
     statics::{main_commands, popup_commands, title},
 };
 
-
 pub fn initialize_terminal() -> Result<Terminal<CrosstermBackend<Stdout>>, std::io::Error> {
     let mut stdout = std::io::stdout();
     execute!(stdout, EnterAlternateScreen)?;

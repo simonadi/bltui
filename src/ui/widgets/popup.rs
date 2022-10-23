@@ -10,7 +10,7 @@ use tui::{
     widgets::{List, ListItem, ListState, Paragraph, StatefulWidget, Widget},
 };
 
-use super::statics::blue_box;
+use super::{statics::blue_box, text_style};
 
 pub trait Popup {
     fn confirm(&self);
@@ -108,11 +108,13 @@ impl Widget for YesNoPopupWidget {
             .split(question_area);
 
         Paragraph::new(self.question)
+            .style(text_style())
             .alignment(Alignment::Center)
             .render(chunks[0], buf);
 
         StatefulWidget::render(
             List::new(vec![ListItem::new("Yes"), ListItem::new("No")])
+                .style(text_style())
                 .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
                 .highlight_symbol("->"),
             chunks[1],

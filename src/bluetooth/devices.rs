@@ -104,6 +104,10 @@ impl Devices {
     pub fn len(&self) -> usize {
         self.devices.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.devices.is_empty()
+    }
 }
 
 impl Default for Devices {

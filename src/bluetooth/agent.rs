@@ -13,7 +13,7 @@ use crate::events::{agent::AgentEvent, AppEvent};
 use log::debug;
 use zbus::DBusError;
 
-#[derive(Debug, DBusError, PartialEq)]
+#[derive(Debug, DBusError, PartialEq, Eq)]
 #[dbus_error(prefix = "org.bluez.Error", impl_display = true)]
 pub enum BluezError {
     Rejected(String),

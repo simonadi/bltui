@@ -15,6 +15,14 @@ pub struct BluetoothController {
     pub scanning: bool,
 }
 
+fn get_periph_name(props: Option<String>) -> String {
+    if let Some(name) = props {
+        name
+    } else {
+        "Unknown".to_string()
+    }
+}
+
 impl BluetoothController {
     pub async fn from_first_adapter() -> BluetoothController {
         let manager = Manager::new().await.unwrap();
@@ -36,7 +44,7 @@ impl BluetoothController {
                 .await
                 .unwrap()
                 .as_str()
-                .split(" ")
+                .split(' ')
                 .next()
                 .unwrap()
                 .to_string();
@@ -69,12 +77,14 @@ impl BluetoothController {
 
     pub async fn connect(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
         let periph = self.adapter.peripheral(periph_id).await?;
+        let properties = periph.properties().await.unwrap().unwrap();
+        let name = get_periph_name(properties.local_name);
 
         if periph.is_connected().await? {
-            info!("Device is already connected");
+            info!("Already connected to {}", name);
             Ok(())
         } else {
-            info!("Connecting to device");
+            info!("Connecting to {}", name);
             periph.connect().await?;
             Ok(())
         }
@@ -82,12 +92,14 @@ impl BluetoothController {
 
     pub async fn disconnect(&self, periph_id: &PeripheralId) -> Result<(), btleplug::Error> {
         let periph = self.adapter.peripheral(periph_id).await?;
+        let properties = periph.properties().await.unwrap().unwrap();
+        let name = get_periph_name(properties.local_name);
 
         if !periph.is_connected().await? {
-            info!("Device already disconnected");
+            info!("Not connected to {}", name);
             Ok(())
         } else {
-            info!("Disconnecting from device");
+            info!("Disconnecting from {}", name);
             periph.disconnect().await?;
             Ok(())
         }
@@ -107,11 +119,7 @@ impl BluetoothController {
         Device {
             periph_id: periph.id(),
             address: periph.address().to_string(),
-            name: if let Some(name) = properties.local_name {
-                name
-            } else {
-                String::from("Unknown")
-            },
+            name: get_periph_name(properties.local_name),
             connected: periph.is_connected().await.unwrap(),
             // paired: periph.is_paired().await.unwrap(),
             // trusted: periph.is_trusted().await.unwrap(),

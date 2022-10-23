@@ -5,6 +5,8 @@ use tui::{
     widgets::{Block, Borders, Paragraph},
 };
 
+use super::text_style;
+
 pub fn blue_box(title: Option<String>) -> Block<'static> {
     let block = Block::default()
         .style(Style::default().fg(Color::Black))
@@ -33,6 +35,7 @@ pub fn main_commands<'a>(scanning: bool) -> Paragraph<'a> {
         Span::raw("d: disconnect   "),
         Span::raw("q: quit"),
     ]))
+    .style(text_style())
     .block(blue_box(None))
 }
 
@@ -41,6 +44,7 @@ pub fn popup_commands<'a>() -> Paragraph<'a> {
         Span::raw("⇵: move   "),
         Span::raw("↲: confirm"),
     ]))
+    .style(text_style())
     .block(blue_box(None))
 }
 

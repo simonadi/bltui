@@ -6,7 +6,7 @@ use tui::{
 
 use crate::bluetooth::devices::{Device, Devices};
 
-use super::statics::blue_box;
+use super::{statics::blue_box, text_style};
 
 impl From<Device> for Text<'_> {
     fn from(device: Device) -> Text<'static> {
@@ -26,6 +26,7 @@ impl From<Device> for Text<'_> {
 
 pub fn devices_list<'a>(devices: &Devices) -> List<'a> {
     List::new(devices.list_items())
+        .style(text_style())
         .highlight_style(Style::default().bg(Color::White).fg(Color::Black))
         .highlight_symbol("->")
         .block(blue_box(Some(format!(
