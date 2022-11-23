@@ -25,4 +25,4 @@ jobs:
           args: cargo-audit
       - name: Audit
         run: |
-          cargo audit --ignore RUSTSEC-2022-0048
+          cargo audit --ignore RUSTSEC-2020-0071
