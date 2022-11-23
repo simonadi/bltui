@@ -13,7 +13,11 @@ fn get_logs_dir() -> PathBuf {
 fn get_log_file_path(logs_dir: PathBuf) -> PathBuf {
     let mut log_file = logs_dir;
     let datetime = time::OffsetDateTime::now_utc();
-    log_file.push(datetime.format(&time::format_description::well_known::Rfc3339).unwrap());
+    log_file.push(
+        datetime
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap(),
+    );
     log_file.set_extension("log");
     log_file
 }
