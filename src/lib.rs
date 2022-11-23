@@ -25,6 +25,7 @@ pub struct App {
     rx: Receiver<AppEvent>,
 }
 
+#[allow(clippy::new_without_default)]
 impl App {
     pub fn new() -> App {
         let (tx, rx) = tokio::sync::mpsc::channel(100);

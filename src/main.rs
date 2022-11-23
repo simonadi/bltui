@@ -205,14 +205,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             if let Some(device) = device_opt {
                                 let periph_id = device.periph_id.clone();
                                 tokio::spawn(async move {
-                                    match controller.connect(&periph_id).await {
-                                        Ok(()) => {
-                                            // info!("Successfuly connected")
-                                        }
-                                        Err(_) => {
-                                            // error!("Failed connecting to device")
-                                        }
-                                    }
+                                    controller.connect(&periph_id).await.unwrap();
                                 });
                             }
                         }
@@ -222,14 +215,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             if let Some(device) = device_opt {
                                 let periph_id = device.periph_id.clone();
                                 tokio::spawn(async move {
-                                    match controller.disconnect(&periph_id).await {
-                                        Ok(()) => {
-                                            // info!("Successfuly disconnected")
-                                        }
-                                        Err(_) => {
-                                            // error!("Failed disconnecting from device")
-                                        }
-                                    }
+                                    controller.disconnect(&periph_id).await.unwrap();
                                 });
                             }
                         }
