@@ -52,11 +52,3 @@ jobs:
         with:
           command: fmt
           args: --check
-      - name: Install cargo audit
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-audit
-      - name: audit
-        run: |
-          cargo audit --ignore RUSTSEC-2020-0071
