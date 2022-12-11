@@ -24,7 +24,7 @@ tui = "0.18"
 # logging
 dirs = "4.0.0"
 log = "0.4"
-chrono = "0.4.19"
+time = { version = "0.3", features = ["macros", "formatting"] }
 tui-logger="0.8"
 # utils
 lazy_static = "1.4.0"
