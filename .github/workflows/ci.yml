@@ -9,7 +9,7 @@ on:
 name: CI
 
 jobs:
-  job:
+  conventional-commit-check:
     name: Check PR title for CC
     runs-on: ubuntu-latest
     steps:
@@ -17,7 +17,7 @@ jobs:
         id: check-for-cc
         uses: agenthunt/conventional-commit-checker-action@v1.0.0
 
-  job:
+  matrix-checks:
     name: check & test 
     runs-on: ubuntu-latest
     strategy:
@@ -41,7 +41,7 @@ jobs:
         with:
           command: test
 
-  job:
+  checks:
     name: clippy & fmt check 
     runs-on: ubuntu-latest
     steps:
