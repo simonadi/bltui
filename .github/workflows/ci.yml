@@ -10,7 +10,7 @@ name: CI
 
 jobs:
   check:
-    name: Check
+    name: check & test 
     runs-on: ubuntu-latest
     strategy:
       matrix:
