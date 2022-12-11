@@ -4,7 +4,7 @@ use btleplug::{
     platform::{Adapter, Manager, PeripheralId},
 };
 use futures::Stream;
-use log::{info, error};
+use log::{error, info};
 use std::pin::Pin;
 
 use crate::bluetooth::devices::Device;
@@ -107,9 +107,7 @@ impl BluetoothController {
         } else {
             info!("Disconnecting from {}", name);
             match periph.disconnect().await {
-                Ok(()) => {
-                    
-                }
+                Ok(()) => {}
                 Err(_) => {
                     error!("Failed disconnecting from {}", name);
                 }

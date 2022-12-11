@@ -13,6 +13,8 @@ use crate::events::{agent::AgentEvent, AppEvent};
 use log::debug;
 use zbus::DBusError;
 
+static TIMEOUT: Duration = Duration::from_secs(20);
+
 #[derive(Debug, DBusError, PartialEq, Eq)]
 #[dbus_error(prefix = "org.bluez.Error", impl_display = true)]
 pub enum BluezError {
@@ -32,7 +34,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::Release { tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+        timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 
     async fn request_pin_code(
@@ -44,7 +46,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::RequestPincode { tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+        timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 
     async fn display_pin_code(
@@ -57,7 +59,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::DisplayPincode { pincode, tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+        timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 
     async fn request_passkey(&self, _device: zvariant::ObjectPath<'_>) -> Result<u32, BluezError> {
@@ -66,7 +68,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::RequestPasskey { tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+        timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 
     async fn display_passkey(
@@ -80,7 +82,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::DisplayPasskey { passkey, tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+        timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 
     async fn request_confirmation(
@@ -97,7 +99,7 @@ impl AgentServer {
             .await
             .unwrap();
         debug!("Sent request for confirmation");
-        let result = timeout(Duration::from_secs(20), rx).await.unwrap().unwrap();
+        let result = timeout(TIMEOUT, rx).await.unwrap().unwrap();
         debug!("Received request for confirmation input");
         result
     }
@@ -111,7 +113,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::RequestAuthorization { tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+        timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 
     async fn authorize_service(
@@ -124,7 +126,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::AuthorizeService { uuid, tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+        timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 
     async fn cancel(&self) -> Result<(), BluezError> {
@@ -133,7 +135,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::Cancel { tx }))
             .await
             .unwrap();
-        timeout(Duration::from_secs(20), rx).await.unwrap().unwrap()
+        timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 }
 

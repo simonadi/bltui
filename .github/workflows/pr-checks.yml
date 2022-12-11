@@ -1,0 +1,19 @@
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+    branches:
+      - main 
+
+name: PR structure checks
+
+jobs:
+  conventional-commit-check:
+    name: Check PR title for CC
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for CC
+        id: check-for-cc
+        uses: agenthunt/conventional-commit-checker-action@v1.0.0
