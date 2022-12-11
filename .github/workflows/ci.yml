@@ -1,7 +1,10 @@
 on:
   pull_request:
     branches:
-      - master
+      - main 
+  push:
+    branches:
+      - main
 
 name: CI
 
@@ -25,9 +28,13 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
+      - name: test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
 
   job:
-    name: test & clippy & fmt check 
+    name: clippy & fmt check 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -39,10 +46,6 @@ jobs:
           profile: minimal
           toolchain: stable
           components: clippy, rustfmt
-      - name: test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
       - name: clippy
         uses: actions-rs/cargo@v1
         with:
