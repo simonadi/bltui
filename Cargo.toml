@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["clapmytrapp"]
 homepage = "https://github.com/clapmytrapp/bltui"
 repository = "https://github.com/clapmytrapp/bltui"
-description = ""
+description = "A Bluetooth connection managing TUI"
 keywords = ["bluetooth", "tui", "cli", "terminal"]
 license = "MIT"
 
