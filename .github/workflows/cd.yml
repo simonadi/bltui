@@ -35,8 +35,9 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: login
-          args: ${{ secrets.CRATES_API_TOKEN}}
+          args: ${{ secrets.CRATES_API_TOKEN }}
       - name: Publish
         uses: actions-rs/cargo@v1
         with: 
-          command: release --execute 
+          command: release
+          args: --execute
