@@ -6,6 +6,7 @@ on:
       - main
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
 
 jobs:
   name: Publish 
@@ -15,14 +16,20 @@ jobs:
     - name: Install dbus utils
       run: |
         sudo apt install libdbus-1-dev pkg-config
-    - uses: actions-rs/toolchain@v1
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: stable
+    - name: Install cargo-release
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: cargo-release
     - name: Check packaging
       uses: actions-rs/cargo@v1
       with:
-        command: package
+        command: release 
     - name: Login crates.io
       uses: actions-rs/cargo@v1
       with:
@@ -31,4 +38,4 @@ jobs:
     - name: Publish
       uses: actions-rs/cargo@v1
       with: 
-        command: publish
+        command: release --execute 
