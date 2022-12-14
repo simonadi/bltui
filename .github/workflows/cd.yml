@@ -1,7 +1,7 @@
 on:
   workflow_dispatch:
 
-name: CD
+name: Release new version
 
 jobs:
   publish:
@@ -29,9 +29,11 @@ jobs:
       - name: output next release version
         run: |
          echo "version="$(convco version --bump) >> $GITHUB_ENV
+         convco version --bump
       - name: output version changelog
         run: |
           echo "changelog="$(convco changelog --include-hidden-sections -m 1) >> $GITHUB_ENV
+          convco changelog --include-hidden-sections -m 1
       - name: dry run release
         run: |
           cargo release ${{ env.version }}
