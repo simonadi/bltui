@@ -9,13 +9,9 @@ on:
 name: CI
 
 jobs:
-  check-test:
+  ci:
     name: check & test 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - stable
     steps:
       - uses: actions/checkout@v3
       - run: |
@@ -24,7 +20,8 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust }}
+          toolchain: stable 
+          components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
@@ -33,21 +30,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-
-  lint-fmt:
-    name: clippy & fmt check 
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: |
-          sudo apt install libdbus-1-dev pkg-config
-        name: Install dbus utils
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          components: clippy, rustfmt
-      - uses: Swatinem/rust-cache@v2
       - name: clippy
         uses: actions-rs/cargo@v1
         with:
