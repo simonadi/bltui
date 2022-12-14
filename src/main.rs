@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     init_tui_logger(log_level);
     if settings.log_to_file {
-        init_file_logging()?;
+        init_file_logging().expect("Could not start logging to file");
     }
 
     let mut app = App::new();
