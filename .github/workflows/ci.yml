@@ -25,6 +25,7 @@ jobs:
         with:
           profile: minimal
           toolchain: ${{ matrix.rust }}
+      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: check
