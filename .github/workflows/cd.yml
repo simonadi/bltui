@@ -26,6 +26,9 @@ jobs:
         with:
           command: install
           args: cargo-release convco
+      - name: git log
+        run: |
+          git log
       - name: output next release version
         run: |
          echo "version="$(convco version --bump) >> $GITHUB_ENV
