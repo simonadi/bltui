@@ -9,7 +9,7 @@ on:
 name: CI
 
 jobs:
-  matrix-checks:
+  check-test:
     name: check & test 
     runs-on: ubuntu-latest
     strategy:
@@ -33,7 +33,7 @@ jobs:
         with:
           command: test
 
-  checks:
+  lint-fmt:
     name: clippy & fmt check 
     runs-on: ubuntu-latest
     steps:
