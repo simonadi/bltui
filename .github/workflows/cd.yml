@@ -1,0 +1,47 @@
+on:
+  workflow_dispatch:
+
+name: CD
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: setup git config
+        run: |
+          git config user.name "Github Actions Bot"
+          git config user.email "<>"
+      - name: install rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: install cargo release & convco
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-release convco
+      - name: output next release version
+        run: |
+         echo "version="$(convco version --bump) >> $GITHUB_ENV
+      - name: output version changelog
+        run: |
+          echo "changelog="$(convco changelog --include-hidden-sections -m 1) >> $GITHUB_ENV
+      - name: dry run release
+        run: |
+          cargo release ${{ env.version }}
+      - name: release
+        run: |
+          cargo release ${{ env.version }} --execute
+      - name: create github release
+        uses: actions/create-release@v1
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.version }}
+          release_name: Release v${{ env.version }}
+          body: ${{ env.changelog }}
+          draft: false
+          prerelease: false
