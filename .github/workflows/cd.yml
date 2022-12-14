@@ -36,9 +36,9 @@ jobs:
         run: |
          echo "version="$(convco version --bump) >> $GITHUB_ENV
          convco version --bump
-      - name: output version changelog
+      - name: dump changelog
         run: |
-          echo "changelog="$(convco changelog --include-hidden-sections -m 1) >> $GITHUB_ENV
+          convco changelog --include-hidden-sections -m 1 > changelog.md
           convco changelog --include-hidden-sections -m 1
       - name: dry run release
         run: |
@@ -53,6 +53,6 @@ jobs:
         with:
           tag_name: ${{ env.version }}
           release_name: Release v${{ env.version }}
-          body: ${{ env.changelog }}
+          body_path: changelog.md
           draft: false
           prerelease: false
