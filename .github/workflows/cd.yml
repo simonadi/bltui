@@ -18,6 +18,9 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+      - name: Install dbus utils
+        run: |
+          sudo apt install libdbus-1-dev pkg-config
       - name: install cargo release & convco
         uses: actions-rs/cargo@v1
         with:
