@@ -21,6 +21,8 @@ jobs:
           profile: minimal
           toolchain: stable
       - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: bltui
       - name: Install dbus utils
         run: |
           sudo apt install libdbus-1-dev pkg-config
@@ -45,7 +47,7 @@ jobs:
           cargo release ${{ env.version }}
       - name: release
         run: |
-          cargo release ${{ env.version }} --execute
+          cargo release ${{ env.version }} --execute --no-confirm
       - name: create github release
         uses: actions/create-release@v1
         env: 
