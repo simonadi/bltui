@@ -73,7 +73,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut app = App::new();
 
     let mut bt_controller = if let Some(adapter) = settings.adapter {
-        BluetoothController::from_adapter(&adapter).await.expect("The requested adapter was not found")
+        BluetoothController::from_adapter(&adapter)
+            .await
+            .expect("The requested adapter was not found")
     } else {
         BluetoothController::from_first_adapter().await
     };
