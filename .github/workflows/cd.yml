@@ -36,23 +36,20 @@ jobs:
         with:
           command: install
           args: cargo-release convco
-      - name: git log
-        run: |
-          git log
       - name: output next release version
         run: |
          echo "version="$(convco version --bump) >> $GITHUB_ENV
          convco version --bump
-      - name: dump changelog
-        run: |
-          convco changelog --include-hidden-sections -m 1 > ../changelog.md
-          convco changelog --include-hidden-sections -m 1
       - name: dry run release
         run: |
           cargo release ${{ env.version }}
       - name: release
         run: |
           cargo release ${{ env.version }} --execute --no-confirm
+      - name: dump changelog
+        run: |
+          convco changelog --include-hidden-sections -m 1 > ../changelog.md
+          convco changelog --include-hidden-sections -m 1
       - name: create github release
         uses: actions/create-release@v1
         env: 
