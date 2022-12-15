@@ -38,7 +38,7 @@ jobs:
          convco version --bump
       - name: dump changelog
         run: |
-          convco changelog --include-hidden-sections -m 1 > changelog.md
+          convco changelog --include-hidden-sections -m 1 > ../changelog.md
           convco changelog --include-hidden-sections -m 1
       - name: dry run release
         run: |
@@ -53,6 +53,6 @@ jobs:
         with:
           tag_name: ${{ env.version }}
           release_name: Release v${{ env.version }}
-          body_path: changelog.md
+          body_path: ../changelog.md
           draft: false
           prerelease: false
