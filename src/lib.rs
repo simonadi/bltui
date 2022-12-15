@@ -16,8 +16,6 @@ pub enum Error {
     InvalidInput(String),
 }
 
-// impl From<btleplug::Error> for Error
-
 pub struct App {
     pub devices: Devices,
     pub popup: Option<YesNoPopup>,
