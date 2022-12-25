@@ -45,12 +45,9 @@ jobs:
     runs-on: ubuntu-latest
     container: 
       image: archlinux
-      options: --user 1000:1000 
+      # options: --user 1000:1000 
     steps:
       - uses: actions/checkout@v3
       - name: Build arch package
         run: |
-          mkdir temp_folder
-          cp -r src temp_folder
-          cp Cargo.* temp_folder
-          makepkg -g
+          makepkg -si
