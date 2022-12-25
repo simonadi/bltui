@@ -7,7 +7,7 @@ arch=("x86_64")
 license=("MIT")
 url="https://github.com/simonadi/bltui"
 depends=("bluez")
-makedepends=("cargo" "convco" "git")
+makedepends=("cargo" "git")
 provides=("bltui")
 # source=("${pkgname}-${pkgver}.tar.gz::https://github.com/simonadi/${pkgname}/archive/${pkgver}.tar.gz")
 # source=("${pkgname}-${pkgver}.tar.gz")
@@ -35,7 +35,6 @@ check() {
 
 package() {
     cd $pkgname
-    echo "lol"
     install -Dm0755 -t "$pkgdir/usr/bin/" "target/release/$pkgname"
 }
 
