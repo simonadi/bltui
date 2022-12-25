@@ -1,27 +1,40 @@
+# Maintainer : Simon <viknesh.adi@gmail.com>
 pkgname=bltui
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Bluetooth TUI"
 arch=("x86_64")
-license=("custom")
-url="https://github.com/clapmytrapp/bltui"
+license=("MIT")
+url="https://github.com/simonadi/bltui"
 depends=("bluez")
-makedepends=("cargo")
-# source=("${pkgname}-${pkgver}.tar.gz::https://github.com/clapmytrapp/${pkgname}/archive/${pkgver}.tar.gz")
-source=("${pkgname}-${pkgver}.tar.gz")
+makedepends=("cargo" "convco" "git")
+provides=("bltui")
+# source=("${pkgname}-${pkgver}.tar.gz::https://github.com/simonadi/${pkgname}/archive/${pkgver}.tar.gz")
+# source=("${pkgname}-${pkgver}.tar.gz")
+source=("git+https://github.com/simonadi/bltui.git")
+
+
+pkgver() {
+    convco version --bump
+}
+
+prepare() {
+    cd $pkgname
+    cargo fetch --locked --target "$CARCH-unknown-linux-gnu"
+}
 
 build() {
-    cd "${pkgname}-${pkgver}"
-    cargo build --release
+    cd $pkgname
+    cargo build --frozen --release
 }
 
 check() {
-    cd "${pkgname}-${pkgver}"
-    cargo check --release
+    cd $pkgname
+    cargo check --frozen --release
 }
 
 package() {
-    cd "${pkgname}-${pkgver}"
+    cd $pkgname
     echo "lol"
     install -Dm0755 -t "$pkgdir/usr/bin/" "target/release/$pkgname"
 }
