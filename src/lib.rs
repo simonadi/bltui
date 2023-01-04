@@ -1,11 +1,13 @@
 use bluetooth::devices::Devices;
 use events::AppEvent;
+use std::path::PathBuf;
 use tokio::sync::mpsc::{Receiver, Sender};
 use ui::widgets::popup::YesNoPopup;
 
 pub mod bluetooth;
 pub mod events;
 pub mod logging;
+pub mod settings;
 pub mod ui;
 
 #[derive(Debug, thiserror::Error)]
@@ -14,6 +16,10 @@ pub enum Error {
     BluetoothError(#[from] btleplug::Error),
     #[error("Invalid input : {}", .0)]
     InvalidInput(String),
+    #[error("Failed parsing the config file at {:?}", .0)]
+    InvalidConfigFile(PathBuf),
+    #[error("IO Error")]
+    IOError(#[from] std::io::Error),
 }
 
 pub struct App {
