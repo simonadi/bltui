@@ -107,7 +107,7 @@ impl AppSettings {
                     let mut log_folder = bltui_folder;
                     log_folder.push("logs");
                     log_folder
-                }
+                },
             },
             adapter: {
                 if cli_settings.adapter.is_some() {
