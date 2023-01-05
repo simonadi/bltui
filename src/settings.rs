@@ -10,7 +10,7 @@ use crate::Error;
 #[derive(Deserialize, Default)]
 struct Config {
     adapter: Option<String>,
-    log_path: Option<String>,
+    log_path: Option<PathBuf>,
 }
 
 impl Config {
@@ -81,8 +81,6 @@ pub struct AppSettings {
 impl AppSettings {
     pub fn parse() -> AppSettings {
         let bltui_folder = get_bltui_folder();
-        let mut log_folder = bltui_folder.clone();
-        log_folder.push("logs");
         let mut config_path = bltui_folder.clone();
         config_path.push("config.toml");
         let file_config = match Config::read_from(&config_path) {
@@ -103,7 +101,13 @@ impl AppSettings {
             log_settings: LogSettings {
                 level: cli_settings.get_log_level(),
                 log_to_file: cli_settings.log_to_file,
-                folder: log_folder,
+                folder: if file_config.log_path.is_some() {
+                    file_config.log_path.unwrap()
+                } else {
+                    let mut log_folder = bltui_folder;
+                    log_folder.push("logs");
+                    log_folder
+                }
             },
             adapter: {
                 if cli_settings.adapter.is_some() {
