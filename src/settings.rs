@@ -15,7 +15,7 @@ struct Config {
 
 impl Config {
     fn read_from(config_path: &Path) -> Result<Config, Error> {
-        let content = std::fs::read_to_string(&config_path)?;
+        let content = std::fs::read_to_string(config_path)?;
 
         match toml::from_str(&content) {
             Ok(conf) => Ok(conf),
