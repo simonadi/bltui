@@ -120,3 +120,29 @@ impl AppSettings {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_bltui_folder_env() {
+        let folder = PathBuf::from("/home/simon");
+        std::env::set_var("BLTUI_FOLDER", folder.to_str().unwrap());
+        let returned_folder = get_bltui_folder();
+        assert_eq!(folder, returned_folder);
+    }
+
+    #[test]
+    fn test_get_bltui_folder_home() {
+        let returned_folder = get_bltui_folder();
+        let mut folder = home_dir().unwrap();
+        folder.push(".bltui");
+        assert_eq!(folder, returned_folder);
+    }
+
+    #[test]
+    fn test_app_settings_parsing() {
+        let 
+    }
+}
