@@ -91,6 +91,7 @@ dependencies = [
  "futures",
  "lazy_static",
  "log",
+ "rand",
  "serde",
  "thiserror",
  "time 0.3.17",

@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use clap::Parser;
 use dirs::home_dir;
-use log::LevelFilter;
+use log::{info, LevelFilter};
 use serde::Deserialize;
 
 use crate::Error;
@@ -57,7 +57,10 @@ impl CliSettings {
 
 fn get_bltui_folder() -> PathBuf {
     match std::env::var("BLTUI_FOLDER") {
-        Ok(path_str) => PathBuf::from(path_str),
+        Ok(path_str) => {
+            println!("Using BLTUI_FOLDER environment variable");
+            PathBuf::from(path_str)
+        }
         Err(_) => {
             let mut path = home_dir().expect("Could not get home directory");
             path.push(".bltui");
@@ -79,24 +82,7 @@ pub struct AppSettings {
 }
 
 impl AppSettings {
-    pub fn parse() -> AppSettings {
-        let bltui_folder = get_bltui_folder();
-        let mut config_path = bltui_folder.clone();
-        config_path.push("config.toml");
-        let file_config = match Config::read_from(&config_path) {
-            Ok(conf) => conf,
-            Err(err) => match err {
-                Error::InvalidConfigFile(path) => {
-                    panic!("Invalid config file at {:?}", path);
-                }
-                Error::IOError(_) => Config::default(),
-                _ => {
-                    panic!("Unexpected error");
-                }
-            },
-        };
-        let cli_settings = CliSettings::parse();
-
+    fn from_cli_and_file_settings(cli_settings: CliSettings, file_config: Config) -> AppSettings {
         AppSettings {
             log_settings: LogSettings {
                 level: cli_settings.get_log_level(),
@@ -104,7 +90,7 @@ impl AppSettings {
                 folder: if file_config.log_path.is_some() {
                     file_config.log_path.unwrap()
                 } else {
-                    let mut log_folder = bltui_folder;
+                    let mut log_folder = get_bltui_folder();
                     log_folder.push("logs");
                     log_folder
                 },
@@ -119,17 +105,64 @@ impl AppSettings {
             show_unknown: cli_settings.show_unknown,
         }
     }
+
+    pub fn parse() -> AppSettings {
+        let mut config_path = get_bltui_folder();
+        config_path.push("config.toml");
+
+        let file_config = match Config::read_from(&config_path) {
+            Ok(conf) => conf,
+            Err(err) => match err {
+                Error::InvalidConfigFile(path) => {
+                    panic!("Invalid config file at {:?}", path);
+                }
+                Error::IOError(_) => Config::default(),
+                _ => {
+                    panic!("Unexpected error");
+                }
+            },
+        };
+        let cli_settings = CliSettings::parse();
+
+        AppSettings::from_cli_and_file_settings(cli_settings, file_config)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::Rng;
+
+    struct TempDir {
+        path: PathBuf,
+    }
+
+    impl TempDir {
+        fn new() -> TempDir {
+            let mut temp_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            temp_dir.push("temp");
+            temp_dir.push(format!("{}", rand::thread_rng().gen_range(0..1000)));
+            std::fs::create_dir_all(&temp_dir).unwrap();
+            TempDir { path: temp_dir }
+        }
+
+        fn path(&self) -> &Path {
+            self.path.as_path()
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            std::fs::remove_dir_all(&self.path).unwrap();
+        }
+    }
 
     #[test]
     fn test_get_bltui_folder_env() {
         let folder = PathBuf::from("/home/simon");
         std::env::set_var("BLTUI_FOLDER", folder.to_str().unwrap());
         let returned_folder = get_bltui_folder();
+        std::env::remove_var("BLTUI_FOLDER");
         assert_eq!(folder, returned_folder);
     }
 
@@ -142,7 +175,110 @@ mod tests {
     }
 
     #[test]
-    fn test_app_settings_parsing() {
-        let 
+    fn test_config_parsing_all() {
+        let temp_dir = TempDir::new();
+        let temp_dir_path = temp_dir.path();
+        let adapter = "hci0";
+        let log_path = "/log/path";
+        let config = format!("adapter = \"{}\"\nlog_path = \"{}\"", adapter, log_path);
+        std::fs::write(temp_dir_path.join("config.toml"), config).unwrap();
+
+        let config = Config::read_from(temp_dir_path.join("config.toml").as_path()).unwrap();
+
+        assert_eq!(config.adapter.unwrap(), adapter);
+        assert_eq!(config.log_path.unwrap(), PathBuf::from(log_path));
+    }
+
+    #[test]
+    fn test_config_parsing_adapter_only() {
+        let temp_dir = TempDir::new();
+        let temp_dir_path = temp_dir.path();
+        let adapter = "hci0";
+        let config = format!("adapter = \"{}\"", adapter);
+        std::fs::write(temp_dir_path.join("config.toml"), config).unwrap();
+
+        let config = Config::read_from(temp_dir_path.join("config.toml").as_path()).unwrap();
+
+        assert_eq!(config.adapter.unwrap(), adapter);
+        assert!(config.log_path.is_none());
+    }
+
+    #[test]
+    fn test_config_parsing_log_path_only() {
+        let temp_dir = TempDir::new();
+        let temp_dir_path = temp_dir.path();
+        let log_path = "/log/path";
+        let config = format!("log_path = \"{}\"", log_path);
+        std::fs::write(temp_dir_path.join("config.toml"), config).unwrap();
+
+        let config = Config::read_from(temp_dir_path.join("config.toml").as_path()).unwrap();
+
+        assert!(config.adapter.is_none());
+        assert_eq!(config.log_path.unwrap(), PathBuf::from(log_path));
+    }
+
+    #[test]
+    fn test_config_parsing_nothing() {
+        let temp_dir = TempDir::new();
+        let temp_dir_path = temp_dir.path();
+        let config = "";
+        std::fs::write(temp_dir_path.join("config.toml"), config).unwrap();
+
+        let config = Config::read_from(temp_dir_path.join("config.toml").as_path()).unwrap();
+
+        assert!(config.adapter.is_none());
+        assert!(config.log_path.is_none());
+    }
+
+    #[test]
+    fn test_config_parsing_invalid() {
+        let temp_dir = TempDir::new();
+        let temp_dir_path = temp_dir.path();
+        let config = "invalid";
+        std::fs::write(temp_dir_path.join("config.toml"), config).unwrap();
+
+        let config = Config::read_from(temp_dir_path.join("config.toml").as_path());
+
+        assert!(config.is_err());
+    }
+
+    #[test]
+    fn test_config_parsing_non_existent() {
+        let temp_dir = TempDir::new();
+        let temp_dir_path = temp_dir.path();
+
+        let config = Config::read_from(temp_dir_path.join("config.toml").as_path());
+
+        assert!(config.is_err());
+    }
+
+    #[test]
+    fn test_config_parsing_invalid_log_path() {
+        let temp_dir = TempDir::new();
+        let temp_dir_path = temp_dir.path();
+        let log_path = "/log \\ path";
+        let config = format!("log_path = \"{}\"", log_path);
+        std::fs::write(temp_dir_path.join("config.toml"), config).unwrap();
+
+        let config = Config::read_from(temp_dir_path.join("config.toml").as_path());
+
+        assert!(config.is_err());
+    }
+
+    #[test]
+    fn test_cli_file_settings_merge() {
+        let file_config = Config {
+            adapter: Some("hci0".to_string()),
+            log_path: Some(PathBuf::from("/log/path")),
+        };
+
+        let cli_settings = CliSettings {
+            adapter: None,
+            debug: 0,
+            show_unknown: false,
+            log_to_file: false,
+        };
+
+        let app_settings = AppSettings::from_cli_and_file_settings(cli_settings, file_config);
     }
 }
