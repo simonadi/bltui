@@ -9,12 +9,12 @@ use bltui::{
         adapter::spawn_adapter_watcher, agent::AgentEvent, keys::spawn_keypress_watcher,
         tick::spawn_ticker, AppEvent,
     },
-    logging::{init_file_logging, init_tui_logger},
+    logging::initialize_logging,
+    settings::AppSettings,
     ui::{draw_frame, initialize_terminal, widgets::popup::YesNoPopup},
     App,
 };
 use btleplug::api::CentralEvent;
-use clap::Parser;
 use crossterm::{
     event::KeyCode,
     execute,
@@ -30,45 +30,11 @@ lazy_static! {
     static ref KEY_POLL_RATE: Duration = Duration::from_millis(8);
 }
 
-#[derive(Debug, Parser)]
-#[command(author, version, about, long_about = None)]
-struct AppSettings {
-    /// Activate debug/trace messages
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    debug: u8,
-
-    /// Display devices with an unknown name
-    #[arg(short = 'u', long, action)]
-    show_unknown: bool,
-
-    /// Log to file (/$homedir/.bltui/logs)
-    #[arg(short, long, action)]
-    log_to_file: bool,
-
-    /// Specify which adapter to use
-    #[arg(short, long)]
-    adapter: Option<String>,
-}
-
-fn translate_log_level(count: u8) -> log::LevelFilter {
-    match count {
-        0 => log::LevelFilter::Info,
-        1 => log::LevelFilter::Debug,
-        2 => log::LevelFilter::Trace,
-        _ => log::LevelFilter::Trace,
-    }
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let settings = AppSettings::parse();
 
-    let log_level = translate_log_level(settings.debug);
-
-    init_tui_logger(log_level);
-    if settings.log_to_file {
-        init_file_logging().expect("Could not start logging to file");
-    }
+    initialize_logging(settings.log_settings)?;
 
     let mut app = App::new();
 
