@@ -14,28 +14,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - run: |
           sudo apt install libdbus-1-dev pkg-config
         name: Install dbus utils
+
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable 
           components: clippy, rustfmt
+
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: bltui
+
+      - uses: taiki-e/install-action@nextest
+
       - uses: actions-rs/cargo@v1
         with:
           command: check
+
       - name: test
         uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: nextest
+          args: run
+
       - name: clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
+
       - name: format check
         uses: actions-rs/cargo@v1
         with:

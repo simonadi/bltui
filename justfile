@@ -45,3 +45,6 @@ check:
 
 commit:
     convco commit
+
+test:
+    cargo nextest run
