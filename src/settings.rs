@@ -264,21 +264,4 @@ mod tests {
 
         assert!(config.is_err());
     }
-
-    #[test]
-    fn test_cli_file_settings_merge() {
-        let file_config = Config {
-            adapter: Some("hci0".to_string()),
-            log_path: Some(PathBuf::from("/log/path")),
-        };
-
-        let cli_settings = CliSettings {
-            adapter: None,
-            debug: 0,
-            show_unknown: false,
-            log_to_file: false,
-        };
-
-        let app_settings = AppSettings::from_cli_and_file_settings(cli_settings, file_config);
-    }
 }
