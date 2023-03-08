@@ -9,7 +9,7 @@ use tokio::{
 };
 use zbus::{dbus_interface, Connection};
 
-use crate::events::{agent::AgentEvent, AppEvent};
+use crate::{devices::MacAddress, AppEvent};
 use log::debug;
 use zbus::DBusError;
 
@@ -20,6 +20,50 @@ static TIMEOUT: Duration = Duration::from_secs(20);
 pub enum BluezError {
     Rejected(String),
     Canceled(String),
+}
+
+pub type Responder<T> = oneshot::Sender<Result<T, BluezError>>;
+
+#[derive(Debug)]
+pub enum AgentEvent {
+    Release {
+        tx: Responder<()>,
+    },
+    RequestPincode {
+        tx: Responder<String>,
+        address: MacAddress,
+    },
+    DisplayPincode {
+        pincode: String,
+        tx: Responder<()>,
+        address: MacAddress,
+    },
+    RequestPasskey {
+        tx: Responder<u32>,
+        address: MacAddress,
+    },
+    DisplayPasskey {
+        passkey: u32,
+        tx: Responder<()>,
+        address: MacAddress,
+    },
+    RequestConfirmation {
+        passkey: u32,
+        tx: Responder<()>,
+        address: MacAddress,
+    },
+    RequestAuthorization {
+        tx: Responder<()>,
+        address: MacAddress,
+    },
+    AuthorizeService {
+        uuid: String,
+        tx: Responder<()>,
+        address: MacAddress,
+    },
+    Cancel {
+        tx: Responder<()>,
+    },
 }
 
 struct AgentServer {
@@ -39,11 +83,14 @@ impl AgentServer {
 
     async fn request_pin_code(
         &self,
-        _device: zvariant::ObjectPath<'_>,
+        device: zvariant::ObjectPath<'_>,
     ) -> Result<String, BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
-            .send(AppEvent::Agent(AgentEvent::RequestPincode { tx }))
+            .send(AppEvent::Agent(AgentEvent::RequestPincode {
+                tx,
+                address: MacAddress::from_dbus_path(device),
+            }))
             .await
             .unwrap();
         timeout(TIMEOUT, rx).await.unwrap().unwrap()
@@ -51,21 +98,28 @@ impl AgentServer {
 
     async fn display_pin_code(
         &self,
-        _device: zvariant::ObjectPath<'_>,
+        device: zvariant::ObjectPath<'_>,
         pincode: String,
     ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
-            .send(AppEvent::Agent(AgentEvent::DisplayPincode { pincode, tx }))
+            .send(AppEvent::Agent(AgentEvent::DisplayPincode {
+                pincode,
+                tx,
+                address: MacAddress::from_dbus_path(device),
+            }))
             .await
             .unwrap();
         timeout(TIMEOUT, rx).await.unwrap().unwrap()
     }
 
-    async fn request_passkey(&self, _device: zvariant::ObjectPath<'_>) -> Result<u32, BluezError> {
+    async fn request_passkey(&self, device: zvariant::ObjectPath<'_>) -> Result<u32, BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
-            .send(AppEvent::Agent(AgentEvent::RequestPasskey { tx }))
+            .send(AppEvent::Agent(AgentEvent::RequestPasskey {
+                tx,
+                address: MacAddress::from_dbus_path(device),
+            }))
             .await
             .unwrap();
         timeout(TIMEOUT, rx).await.unwrap().unwrap()
@@ -73,13 +127,17 @@ impl AgentServer {
 
     async fn display_passkey(
         &self,
-        _device: zvariant::ObjectPath<'_>,
+        device: zvariant::ObjectPath<'_>,
         passkey: u32,
         _entered: u16,
     ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
-            .send(AppEvent::Agent(AgentEvent::DisplayPasskey { passkey, tx }))
+            .send(AppEvent::Agent(AgentEvent::DisplayPasskey {
+                passkey,
+                tx,
+                address: MacAddress::from_dbus_path(device),
+            }))
             .await
             .unwrap();
         timeout(TIMEOUT, rx).await.unwrap().unwrap()
@@ -87,7 +145,7 @@ impl AgentServer {
 
     async fn request_confirmation(
         &self,
-        _device: zvariant::ObjectPath<'_>,
+        device: zvariant::ObjectPath<'_>,
         passkey: u32,
     ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
@@ -95,6 +153,7 @@ impl AgentServer {
             .send(AppEvent::Agent(AgentEvent::RequestConfirmation {
                 passkey,
                 tx,
+                address: MacAddress::from_dbus_path(device),
             }))
             .await
             .unwrap();
@@ -106,11 +165,14 @@ impl AgentServer {
 
     async fn request_authorization(
         &self,
-        _device: zvariant::ObjectPath<'_>,
+        device: zvariant::ObjectPath<'_>,
     ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
-            .send(AppEvent::Agent(AgentEvent::RequestAuthorization { tx }))
+            .send(AppEvent::Agent(AgentEvent::RequestAuthorization {
+                tx,
+                address: MacAddress::from_dbus_path(device),
+            }))
             .await
             .unwrap();
         timeout(TIMEOUT, rx).await.unwrap().unwrap()
@@ -118,12 +180,16 @@ impl AgentServer {
 
     async fn authorize_service(
         &self,
-        _device: zvariant::ObjectPath<'_>,
+        device: zvariant::ObjectPath<'_>,
         uuid: String,
     ) -> Result<(), BluezError> {
         let (tx, rx) = oneshot::channel();
         self.tx
-            .send(AppEvent::Agent(AgentEvent::AuthorizeService { uuid, tx }))
+            .send(AppEvent::Agent(AgentEvent::AuthorizeService {
+                uuid,
+                tx,
+                address: MacAddress::from_dbus_path(device),
+            }))
             .await
             .unwrap();
         timeout(TIMEOUT, rx).await.unwrap().unwrap()
@@ -156,11 +222,13 @@ impl Display for AgentCapability {
 
 pub struct Agent<'a> {
     path: zvariant::ObjectPath<'a>,
+    // name: String,
+    // tx: Sender<AppEvent>,
     capability: AgentCapability,
     connection: Connection,
 }
 
-impl Agent<'static> {
+impl Agent<'_> {
     pub async fn initialize_dbus_connection(
         path: String,
         capability: AgentCapability,
@@ -177,6 +245,12 @@ impl Agent<'static> {
     pub async fn request_name(&self, name: &str) {
         self.connection.request_name(name).await.unwrap();
     }
+
+    // pub async fn register_as_default(&self) {
+    //     self.start_server().await;
+    //     self.register().await;
+    //     self.request_default().await;
+    // }
 
     pub async fn register(&self) {
         self.connection
@@ -226,7 +300,7 @@ impl Agent<'static> {
     pub async fn start_server(&self, tx: Sender<AppEvent>) {
         self.connection
             .object_server()
-            .at("/bltui/agent", AgentServer { tx })
+            .at(self.path.clone(), AgentServer { tx: tx.clone() })
             .await
             .unwrap();
 

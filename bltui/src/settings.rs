@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use clap::Parser;
 use dirs::home_dir;
-use log::{info, LevelFilter};
+use log::LevelFilter;
 use serde::Deserialize;
 
 use crate::Error;
@@ -75,15 +75,22 @@ pub struct LogSettings {
     pub folder: PathBuf,
 }
 
+pub struct DisplaySettings {
+    pub show_unknown: bool,
+}
+
 pub struct AppSettings {
     pub log_settings: LogSettings,
+    pub display_settings: DisplaySettings,
     pub adapter: Option<String>,
-    pub show_unknown: bool,
 }
 
 impl AppSettings {
     fn from_cli_and_file_settings(cli_settings: CliSettings, file_config: Config) -> AppSettings {
         AppSettings {
+            display_settings: DisplaySettings {
+                show_unknown: cli_settings.show_unknown,
+            },
             log_settings: LogSettings {
                 level: cli_settings.get_log_level(),
                 log_to_file: cli_settings.log_to_file,
@@ -102,7 +109,6 @@ impl AppSettings {
                     file_config.adapter
                 }
             },
-            show_unknown: cli_settings.show_unknown,
         }
     }
 
